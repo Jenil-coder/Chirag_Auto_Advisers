@@ -34,7 +34,7 @@ export function VehicleForm({ vehicleId }: VehicleFormProps) {
   const { data: vehicleData, isLoading: isLoadingVehicle } = useQuery({
     queryKey: ["vehicle", vehicleId],
     queryFn: async () => {
-      const response = await apiClient.get(`/vehicles/${vehicleId}`);
+      const response = await apiClient.get(`/vehicles/view?id=${vehicleId}`);
       return response.data.data;
     },
     enabled: !!vehicleId,
@@ -49,7 +49,7 @@ export function VehicleForm({ vehicleId }: VehicleFormProps) {
   const mutation = useMutation({
     mutationFn: async (data: VehicleFormValues) => {
       if (vehicleId) {
-        const response = await apiClient.put(`/vehicles/${vehicleId}`, data);
+        const response = await apiClient.put(`/vehicles/view?id=${vehicleId}`, data);
         return response.data;
       } else {
         const response = await apiClient.post("/vehicles", data);
@@ -106,16 +106,16 @@ export function VehicleForm({ vehicleId }: VehicleFormProps) {
             className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm uppercase placeholder:normal-case shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="e.g. MH01AB1234"
           />
-          {errors.vehicle_number && (
+          {errors.vehicle_number?.message && (
             <p className="text-[0.8rem] font-medium text-destructive">
-              {errors.vehicle_number.message}
+              {String(errors.vehicle_number.message)}
             </p>
           )}
         </div>
 
         <div className="space-y-2">
           <label htmlFor="owner_name" className="text-sm font-medium leading-none">
-            Owner Name *
+            Owner Name
           </label>
           <input
             {...register("owner_name")}
@@ -123,9 +123,9 @@ export function VehicleForm({ vehicleId }: VehicleFormProps) {
             className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="Full Name"
           />
-          {errors.owner_name && (
+          {errors.owner_name?.message && (
             <p className="text-[0.8rem] font-medium text-destructive">
-              {errors.owner_name.message}
+              {String(errors.owner_name.message)}
             </p>
           )}
         </div>

@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { Loader2, Trash2, ArrowLeft, Edit, Upload, Printer, MoreVertical, LayoutDashboard, FileText, History, StickyNote, Car, User, CarFront, Target, Calendar, Factory, Shield, Receipt, CheckCircle2, FileBadge, AlertTriangle, Map, Info } from "lucide-react";
+import { Loader2, Trash2, ArrowLeft, Edit, Upload, Printer, MoreVertical, LayoutGrid, FileText, History, File, Car, User, CarFront, Target, Calendar, Factory, Shield, Receipt, CheckCircle2, FileBadge, AlertTriangle, Map, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
@@ -10,23 +10,27 @@ import { Button } from "@/components/ui/button";
 import { VehicleDocuments } from "@/components/vehicles/vehicle-documents";
 import { VehicleTimeline } from "@/components/vehicles/vehicle-timeline";
 import { InsuranceHistory } from "@/components/vehicles/insurance-history";
+import { VehicleNotes } from "@/components/vehicles/vehicle-notes";
+import { useAuth } from "@/hooks/use-auth";
 
 export function VehicleDetails({ vehicleId }: { vehicleId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { hasPermission } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "documents" | "history" | "notes">("overview");
 
   const { data: vehicle, isLoading, isError } = useQuery({
     queryKey: ["vehicle", vehicleId],
     queryFn: async () => {
-      const response = await apiClient.get(`/vehicles/${vehicleId}`);
+      const response = await apiClient.get(`/vehicles/view?id=${vehicleId}`);
       return response.data.data;
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      await apiClient.delete(`/vehicles/${vehicleId}`);
+      await apiClient.delete(`/vehicles/view?id=${vehicleId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
@@ -202,12 +206,14 @@ export function VehicleDetails({ vehicleId }: { vehicleId: string }) {
 
             {/* Actions Section */}
             <div className="flex items-center space-x-[12px]">
-              <Link href={`/vehicles/${vehicle.id}/edit`}>
-                <Button className="h-[42px] w-[85px] bg-[#123B6D] hover:bg-[#0c2849] text-white rounded-[6px] text-[13px] font-medium flex items-center justify-center">
-                  <Edit className="mr-2 h-[14px] w-[14px]" strokeWidth={2.5} />
-                  Edit
-                </Button>
-              </Link>
+              {hasPermission('motor_management.edit') && (
+                <Link href={`/vehicles/edit?id=${vehicle.id}`}>
+                  <Button className="h-[42px] w-[85px] bg-[#123B6D] hover:bg-[#0c2849] text-white rounded-[6px] text-[13px] font-medium flex items-center justify-center">
+                    <Edit className="mr-2 h-[14px] w-[14px]" strokeWidth={2.5} />
+                    Edit
+                  </Button>
+                </Link>
+              )}
               <Button variant="outline" className="h-[42px] w-[80px] bg-white border-[#CBD5E1] text-[#111111] rounded-[6px] text-[13px] font-medium flex items-center justify-center hover:bg-gray-50 shadow-sm">
                 <Printer className="mr-[6px] h-[16px] w-[16px] text-[#333333]" strokeWidth={2} />
                 Print
@@ -224,459 +230,530 @@ export function VehicleDetails({ vehicleId }: { vehicleId: string }) {
 
       {/* TAB NAVIGATION */}
       <div className="relative mt-8">
-        <div className="flex items-center h-[58px]">
+        <div className="flex items-center h-[54px] gap-8">
           {/* Overview Tab */}
-          <div className="flex items-center h-full px-4 cursor-pointer text-[#123B6D] relative mr-6">
-            <LayoutDashboard className="w-[18px] h-[18px] mr-[8px]" strokeWidth={2} />
-            <span className="text-[14px] font-semibold">Overview</span>
-            <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#123B6D]"></div>
-          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab("overview")}
+            className={`flex items-center h-full px-1 cursor-pointer transition-colors relative ${
+              activeTab === "overview" ? "text-[#123B6D]" : "text-[#475569] hover:text-[#111111]"
+            }`}
+          >
+            <LayoutGrid className="w-[18px] h-[18px] mr-[8px]" strokeWidth={2} />
+            <span className={`text-[15px] ${activeTab === "overview" ? "font-bold text-[#123B6D]" : "font-medium text-[#333333]"}`}>
+              Overview
+            </span>
+            {activeTab === "overview" && (
+              <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#123B6D] rounded-t-sm"></div>
+            )}
+          </button>
           
           {/* Documents Tab */}
-          <Link href={`/vehicles/${vehicle.id}/documents`} className="flex items-center h-full px-4 cursor-pointer text-[#333333] hover:text-[#111111] transition-colors mr-6">
+          <button
+            type="button"
+            onClick={() => setActiveTab("documents")}
+            className={`flex items-center h-full px-1 cursor-pointer transition-colors relative ${
+              activeTab === "documents" ? "text-[#123B6D]" : "text-[#475569] hover:text-[#111111]"
+            }`}
+          >
             <FileText className="w-[18px] h-[18px] mr-[8px]" strokeWidth={2} />
-            <span className="text-[14px] font-medium">Documents</span>
-          </Link>
+            <span className={`text-[15px] ${activeTab === "documents" ? "font-bold text-[#123B6D]" : "font-medium text-[#333333]"}`}>
+              Documents
+            </span>
+            {vehicle.documents && vehicle.documents.length > 0 && (
+              <span className="ml-2 px-2 py-0.5 text-[11px] font-semibold bg-slate-100 text-slate-700 rounded-full border border-slate-200">
+                {vehicle.documents.length}
+              </span>
+            )}
+            {activeTab === "documents" && (
+              <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#123B6D] rounded-t-sm"></div>
+            )}
+          </button>
 
           {/* History Tab */}
-          <div className="flex items-center h-full px-4 cursor-pointer text-[#333333] hover:text-[#111111] transition-colors mr-6">
+          <button
+            type="button"
+            onClick={() => setActiveTab("history")}
+            className={`flex items-center h-full px-1 cursor-pointer transition-colors relative ${
+              activeTab === "history" ? "text-[#123B6D]" : "text-[#475569] hover:text-[#111111]"
+            }`}
+          >
             <History className="w-[18px] h-[18px] mr-[8px]" strokeWidth={2} />
-            <span className="text-[14px] font-medium">History</span>
-          </div>
+            <span className={`text-[15px] ${activeTab === "history" ? "font-bold text-[#123B6D]" : "font-medium text-[#333333]"}`}>
+              History
+            </span>
+            {activeTab === "history" && (
+              <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#123B6D] rounded-t-sm"></div>
+            )}
+          </button>
 
           {/* Notes Tab */}
-          <div className="flex items-center h-full px-4 cursor-pointer text-[#333333] hover:text-[#111111] transition-colors">
-            <StickyNote className="w-[18px] h-[18px] mr-[8px]" strokeWidth={2} />
-            <span className="text-[14px] font-medium">Notes</span>
-          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab("notes")}
+            className={`flex items-center h-full px-1 cursor-pointer transition-colors relative ${
+              activeTab === "notes" ? "text-[#123B6D]" : "text-[#475569] hover:text-[#111111]"
+            }`}
+          >
+            <File className="w-[18px] h-[18px] mr-[8px]" strokeWidth={2} />
+            <span className={`text-[15px] ${activeTab === "notes" ? "font-bold text-[#123B6D]" : "font-medium text-[#333333]"}`}>
+              Notes
+            </span>
+            {activeTab === "notes" && (
+              <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#123B6D] rounded-t-sm"></div>
+            )}
+          </button>
         </div>
         {/* Tab Divider */}
         <div className="absolute bottom-0 left-0 w-full h-[1px] bg-[#E5E7EB]"></div>
       </div>
 
-      {/* VEHICLE SUMMARY CARD */}
-      <div className="mt-[20px] bg-white border border-[#E5E7EB] rounded-[10px] p-[24px]">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-8 divide-x-0 lg:divide-x divide-[#E5E7EB]">
-          
-          {/* Column 1: Vehicle Number */}
-          <div className="px-4 lg:pl-0 lg:pr-6">
-            <div className="flex items-center text-[#666666] mb-[8px]">
-              <Car className="w-[18px] h-[18px] mr-[8px] text-[#333333]" strokeWidth={1.5} />
-              <span className="text-[11px] font-semibold uppercase tracking-wide">VEHICLE NUMBER</span>
-            </div>
-            <div className="text-[15px] font-bold text-[#111111]">
-              {formatText(vehicle.vehicle_number)}
+      {/* TAB CONTENT: 1. OVERVIEW */}
+      {activeTab === "overview" && (
+        <div className="space-y-6">
+          {/* VEHICLE SUMMARY CARD */}
+          <div className="mt-[20px] bg-white border border-[#E5E7EB] rounded-[10px] p-[24px]">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-8 divide-x-0 lg:divide-x divide-[#E5E7EB]">
+              
+              {/* Column 1: Vehicle Number */}
+              <div className="px-4 lg:pl-0 lg:pr-6">
+                <div className="flex items-center text-[#666666] mb-[8px]">
+                  <Car className="w-[18px] h-[18px] mr-[8px] text-[#333333]" strokeWidth={1.5} />
+                  <span className="text-[11px] font-semibold uppercase tracking-wide">VEHICLE NUMBER</span>
+                </div>
+                <div className="text-[15px] font-bold text-[#111111]">
+                  {formatText(vehicle.vehicle_number)}
+                </div>
+              </div>
+
+              {/* Column 2: Owner */}
+              <div className="px-4 lg:px-6">
+                <div className="flex items-center text-[#666666] mb-[8px]">
+                  <User className="w-[18px] h-[18px] mr-[8px] text-[#333333]" strokeWidth={1.5} />
+                  <span className="text-[11px] font-semibold uppercase tracking-wide">OWNER</span>
+                </div>
+                <div className="text-[15px] font-bold text-[#111111] leading-[1.4]">
+                  {formatText(vehicle.owner_name)}
+                </div>
+              </div>
+
+              {/* Column 3: Vehicle Type */}
+              <div className="px-4 lg:px-6">
+                <div className="flex items-center text-[#666666] mb-[8px]">
+                  <CarFront className="w-[18px] h-[18px] mr-[8px] text-[#333333]" strokeWidth={1.5} />
+                  <span className="text-[11px] font-semibold uppercase tracking-wide">VEHICLE TYPE</span>
+                </div>
+                <div className="text-[15px] font-bold text-[#111111] leading-[1.4]">
+                  {formatText(vehicle.vehicle_class?.name)}
+                </div>
+              </div>
+
+              {/* Column 4: Model */}
+              <div className="px-4 lg:px-6">
+                <div className="flex items-center text-[#666666] mb-[8px]">
+                  <Target className="w-[18px] h-[18px] mr-[8px] text-[#333333]" strokeWidth={1.5} />
+                  <span className="text-[11px] font-semibold uppercase tracking-wide">MODEL</span>
+                </div>
+                <div className="text-[15px] font-bold text-[#111111]">
+                  {formatText(vehicle.model)}
+                </div>
+              </div>
+
+              {/* Column 5: Registration Date */}
+              <div className="px-4 lg:px-6">
+                <div className="flex items-center text-[#666666] mb-[8px]">
+                  <Calendar className="w-[18px] h-[18px] mr-[8px] text-[#333333]" strokeWidth={1.5} />
+                  <span className="text-[11px] font-semibold uppercase tracking-wide">REGISTRATION DATE</span>
+                </div>
+                <div className="text-[15px] font-bold text-[#111111]">
+                  {formatDate(vehicle.registration_date)}
+                </div>
+              </div>
+
+              {/* Column 6: Make */}
+              <div className="px-4 lg:px-6 border-r-0">
+                <div className="flex items-center text-[#666666] mb-[8px]">
+                  <Factory className="w-[18px] h-[18px] mr-[8px] text-[#333333]" strokeWidth={1.5} />
+                  <span className="text-[11px] font-semibold uppercase tracking-wide">MAKE</span>
+                </div>
+                <div className="text-[15px] font-bold text-[#111111]">
+                  {formatText(vehicle.make?.name)}
+                </div>
+              </div>
+
             </div>
           </div>
 
-          {/* Column 2: Owner */}
-          <div className="px-4 lg:px-6">
-            <div className="flex items-center text-[#666666] mb-[8px]">
-              <User className="w-[18px] h-[18px] mr-[8px] text-[#333333]" strokeWidth={1.5} />
-              <span className="text-[11px] font-semibold uppercase tracking-wide">OWNER</span>
+          {/* COMPLIANCE STATUS SECTION */}
+          <div className="mt-[20px] bg-white border border-[#E5E7EB] rounded-[10px] p-[20px]">
+            <div className="flex items-center mb-[18px]">
+              <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
+              <h3 className="text-[14px] font-semibold text-[#111111]">Compliance Status</h3>
             </div>
-            <div className="text-[15px] font-bold text-[#111111] leading-[1.4]">
-              {formatText(vehicle.owner_name)}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[16px]">
+              
+              {/* Card 1: Insurance */}
+              <div className="border rounded-[10px] h-[90px] p-[16px] flex flex-col justify-between" style={{ backgroundColor: insuranceStatus.bg, borderColor: insuranceStatus.border }}>
+                <div className="flex items-center">
+                  <Shield className="w-[20px] h-[20px] text-[#333333] mr-[10px]" strokeWidth={1.8} />
+                  <span className="text-[12px] font-bold text-[#111111] uppercase tracking-wide">INSURANCE</span>
+                </div>
+                <div>
+                  <div className="flex items-center font-semibold text-[13px] mb-[2px]" style={{ color: insuranceStatus.color }}>
+                    <insuranceStatus.AlertIcon className="w-[14px] h-[14px] mr-[6px]" strokeWidth={2.5} />
+                    {insuranceStatus.status}
+                  </div>
+                  <div className="text-[13px] text-[#333333] pl-[20px]">
+                    {formatDate(latestInsurance?.expiry_date)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Tax */}
+              <div className="border rounded-[10px] h-[90px] p-[16px] flex flex-col justify-between" style={{ backgroundColor: taxStatus.bg, borderColor: taxStatus.border }}>
+                <div className="flex items-center">
+                  <Receipt className="w-[20px] h-[20px] text-[#333333] mr-[10px]" strokeWidth={1.8} />
+                  <span className="text-[12px] font-bold text-[#111111] uppercase tracking-wide">TAX</span>
+                </div>
+                <div>
+                  <div className="flex items-center font-semibold text-[13px] mb-[2px]" style={{ color: taxStatus.color }}>
+                    <taxStatus.AlertIcon className="w-[14px] h-[14px] mr-[6px]" strokeWidth={2.5} />
+                    {taxStatus.status}
+                  </div>
+                  <div className="text-[13px] text-[#333333] pl-[20px]">
+                    {formatDate(latestTax?.valid_upto)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Fitness */}
+              <div className="border rounded-[10px] h-[90px] p-[16px] flex flex-col justify-between" style={{ backgroundColor: fitnessStatus.bg, borderColor: fitnessStatus.border }}>
+                <div className="flex items-center">
+                  <CheckCircle2 className="w-[20px] h-[20px] text-[#333333] mr-[10px]" strokeWidth={1.8} />
+                  <span className="text-[12px] font-bold text-[#111111] uppercase tracking-wide">FITNESS</span>
+                </div>
+                <div>
+                  <div className="flex items-center font-semibold text-[13px] mb-[2px]" style={{ color: fitnessStatus.color }}>
+                    <fitnessStatus.AlertIcon className="w-[14px] h-[14px] mr-[6px]" strokeWidth={2.5} />
+                    {fitnessStatus.status}
+                  </div>
+                  <div className="text-[13px] text-[#333333] pl-[20px]">
+                    {formatDate(latestFitness?.expiry_date)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 4: Permit */}
+              <div className="border rounded-[10px] h-[90px] p-[16px] flex flex-col justify-between" style={{ backgroundColor: permitStatus.bg, borderColor: permitStatus.border }}>
+                <div className="flex items-center">
+                  <FileBadge className="w-[20px] h-[20px] text-[#333333] mr-[10px]" strokeWidth={1.8} />
+                  <span className="text-[12px] font-bold text-[#111111] uppercase tracking-wide">PERMIT</span>
+                </div>
+                <div>
+                  <div className="flex items-center font-semibold text-[13px] mb-[2px]" style={{ color: permitStatus.color }}>
+                    <permitStatus.AlertIcon className="w-[14px] h-[14px] mr-[6px]" strokeWidth={2.5} />
+                    {permitStatus.status}
+                  </div>
+                  <div className="text-[13px] text-[#333333] pl-[20px]">
+                    {formatDate(latestPermit?.expiry_date)}
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
-          {/* Column 3: Vehicle Type */}
-          <div className="px-4 lg:px-6">
-            <div className="flex items-center text-[#666666] mb-[8px]">
-              <CarFront className="w-[18px] h-[18px] mr-[8px] text-[#333333]" strokeWidth={1.5} />
-              <span className="text-[11px] font-semibold uppercase tracking-wide">VEHICLE TYPE</span>
+          {/* PART 4: VEHICLE INFO & TAX DETAILS */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-[16px] mt-[16px]">
+            
+            {/* Vehicle Information Card */}
+            <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[20px]">
+              <div className="flex items-center mb-[18px]">
+                <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
+                <h3 className="text-[14px] font-semibold text-[#111111]">Vehicle Information</h3>
+              </div>
+              
+              <div className="flex">
+                {/* Left Column */}
+                <div className="flex-1 pr-[16px]">
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">Class</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.vehicle_class?.name)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">Model</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.model)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">Horse Power</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{vehicle.horse_power ? `${vehicle.horse_power}CC` : "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">RLW</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.rlw)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] text-[#666666]">Cylinder</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.cylinder)}</span>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="w-[1px] bg-[#E5E7EB] mx-[4px]"></div>
+
+                {/* Right Column */}
+                <div className="flex-1 pl-[20px]">
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">S_C_Ind</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.s_c_ind)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">UW</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.uw)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">PLW</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.plw)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">Chassis No.</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.chassis_number)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] text-[#666666]">Engine No.</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.engine_number)}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="text-[15px] font-bold text-[#111111] leading-[1.4]">
-              {formatText(vehicle.vehicle_class?.name)}
+
+            {/* Tax Details Card */}
+            <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[20px]">
+              <div className="flex items-center mb-[18px]">
+                <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
+                <h3 className="text-[14px] font-semibold text-[#111111]">Tax Details</h3>
+              </div>
+              
+              <div className="flex">
+                {/* Left Column */}
+                <div className="flex-1 pr-[16px]">
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">Tax Up To Date</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatDate(latestTax?.valid_upto)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">Tax Paid Date</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatDate(latestTax?.paid_date)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">Tax Penalty</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatCurrency(latestTax?.penalty)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">Tax Interest</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatCurrency(latestTax?.interest)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] text-[#666666]">Tax Amount</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatCurrency(latestTax?.amount)}</span>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="w-[1px] bg-[#E5E7EB] mx-[4px]"></div>
+
+                {/* Right Column */}
+                <div className="flex-1 pl-[20px]">
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">Tax Receipt No.</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatText(latestTax?.receipt_number)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">Yearly</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{latestTax?.yearly ? 'Y' : (latestTax?.yearly === false ? 'N' : '—')}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">Yearly Amount</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatCurrency(latestTax?.yearly_amount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-[12px]">
+                    <span className="text-[13px] text-[#666666]">Half Yearly</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{latestTax?.half_yearly ? 'Y' : (latestTax?.half_yearly === false ? 'N' : '—')}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] text-[#666666]">Half Yearly Amount</span>
+                    <span className="text-[13px] font-semibold text-[#111111]">{formatCurrency(latestTax?.half_yearly_amount)}</span>
+                  </div>
+                </div>
+              </div>
             </div>
+
           </div>
 
-          {/* Column 4: Model */}
-          <div className="px-4 lg:px-6">
-            <div className="flex items-center text-[#666666] mb-[8px]">
-              <Target className="w-[18px] h-[18px] mr-[8px] text-[#333333]" strokeWidth={1.5} />
-              <span className="text-[11px] font-semibold uppercase tracking-wide">MODEL</span>
+          {/* PART 5: ADDITIONAL COMPLIANCE DETAILS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-[12px] mt-[16px]">
+            
+            {/* Card 1: Fitness Details */}
+            <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[16px] min-h-[150px]">
+              <div className="flex items-center mb-[18px]">
+                <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
+                <h3 className="text-[14px] font-semibold text-[#111111]">Fitness Details</h3>
+              </div>
+              <div className="space-y-[10px]">
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">Fitness Up To Date</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatDate(latestFitness?.expiry_date)}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">Passed By</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestFitness?.passed_by)}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">Place</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestFitness?.place)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-[2px]">
+                  <span className="text-[12px] text-[#666666]">Status</span>
+                  <span className="px-[6px] py-[2px] rounded-[4px] border text-[11px] font-semibold" style={{ backgroundColor: fitnessStatus.bg, borderColor: fitnessStatus.border, color: fitnessStatus.color }}>
+                    {fitnessStatus.status}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="text-[15px] font-bold text-[#111111]">
-              {formatText(vehicle.model)}
-            </div>
-          </div>
 
-          {/* Column 5: Registration Date */}
-          <div className="px-4 lg:px-6">
-            <div className="flex items-center text-[#666666] mb-[8px]">
-              <Calendar className="w-[18px] h-[18px] mr-[8px] text-[#333333]" strokeWidth={1.5} />
-              <span className="text-[11px] font-semibold uppercase tracking-wide">REGISTRATION DATE</span>
+            {/* Card 2: Permit Details */}
+            <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[16px] min-h-[150px]">
+              <div className="flex items-center mb-[18px]">
+                <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
+                <h3 className="text-[14px] font-semibold text-[#111111]">Permit Details</h3>
+              </div>
+              <div className="space-y-[10px]">
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">Permit Up To Date</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatDate(latestPermit?.expiry_date)}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">Permit No.</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestPermit?.permit_number)}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">Permit Amount</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatCurrency(latestPermit?.amount)}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">Receipt No.</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestPermit?.receipt_no)}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">Permit Date</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatDate(latestPermit?.issue_date)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-[2px]">
+                  <span className="text-[12px] text-[#666666]">Status</span>
+                  <span className="px-[6px] py-[2px] rounded-[4px] border text-[11px] font-semibold" style={{ backgroundColor: permitStatus.bg, borderColor: permitStatus.border, color: permitStatus.color }}>
+                    {permitStatus.status}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="text-[15px] font-bold text-[#111111]">
-              {formatDate(vehicle.registration_date)}
-            </div>
-          </div>
 
-          {/* Column 6: Make */}
-          <div className="px-4 lg:px-6 border-r-0">
-            <div className="flex items-center text-[#666666] mb-[8px]">
-              <Factory className="w-[18px] h-[18px] mr-[8px] text-[#333333]" strokeWidth={1.5} />
-              <span className="text-[11px] font-semibold uppercase tracking-wide">MAKE</span>
+            {/* Card 3: National Permit Details */}
+            <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[16px] min-h-[150px]">
+              <div className="flex items-center mb-[18px]">
+                <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
+                <h3 className="text-[14px] font-semibold text-[#111111]">National Permit Details</h3>
+              </div>
+              <div className="space-y-[10px]">
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">National Permit Up To Date</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatDate(latestNationalPermit?.expiry_date)}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">National Permit State</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestNationalPermit?.state_info)}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">Postal Address</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestNationalPermit?.address)}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">City</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestNationalPermit?.city)}</span>
+                </div>
+              </div>
             </div>
-            <div className="text-[15px] font-bold text-[#111111]">
-              {formatText(vehicle.make?.name)}
-            </div>
-          </div>
 
+            {/* Card 4: Insurance Details */}
+            <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[16px] min-h-[150px]">
+              <div className="flex items-center mb-[18px]">
+                <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
+                <h3 className="text-[14px] font-semibold text-[#111111]">Insurance Details</h3>
+              </div>
+              <div className="space-y-[10px]">
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">Insurance Company</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestInsurance?.insurance_company?.name)}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">Policy No.</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestInsurance?.policy_number)}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-[12px] text-[#666666]">Expiry Date</span>
+                  <span className="text-[12px] font-semibold text-[#111111] text-right">{formatDate(latestInsurance?.expiry_date)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-[2px]">
+                  <span className="text-[12px] text-[#666666]">Status</span>
+                  <span className="px-[6px] py-[2px] rounded-[4px] border text-[11px] font-semibold" style={{ backgroundColor: insuranceStatus.bg, borderColor: insuranceStatus.border, color: insuranceStatus.color }}>
+                    {insuranceStatus.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 5: Additional Information */}
+            <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[16px] min-h-[150px]">
+              <div className="flex items-center mb-[18px]">
+                <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
+                <h3 className="text-[14px] font-semibold text-[#111111]">Additional Information</h3>
+              </div>
+              <div className="space-y-[12px]">
+                <div>
+                  <div className="text-[12px] text-[#666666] mb-[2px]">HPA With</div>
+                  <div className="text-[12px] font-semibold text-[#111111] leading-[1.3] break-words">{formatText(vehicle.hpa_with)}</div>
+                </div>
+                <div>
+                  <div className="text-[12px] text-[#666666] mb-[2px]">Remarks</div>
+                  <div className="text-[12px] font-semibold text-[#111111]">{formatText(vehicle.remarks)}</div>
+                </div>
+                <div>
+                  <div className="text-[12px] text-[#666666] mb-[2px]">Group</div>
+                  <div className="text-[12px] font-semibold text-[#111111]">{formatText(vehicle.group)}</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* COMPLIANCE STATUS SECTION */}
-      <div className="mt-[20px] bg-white border border-[#E5E7EB] rounded-[10px] p-[20px]">
-        <div className="flex items-center mb-[18px]">
-          <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
-          <h3 className="text-[14px] font-semibold text-[#111111]">Compliance Status</h3>
+      {/* TAB CONTENT: 2. DOCUMENTS */}
+      {activeTab === "documents" && (
+        <VehicleDocuments vehicleId={vehicle.id} documents={vehicle.documents || []} />
+      )}
+
+      {/* TAB CONTENT: 3. HISTORY */}
+      {activeTab === "history" && (
+        <div className="space-y-6 mt-[20px]">
+          <VehicleTimeline vehicle={vehicle} />
+          <InsuranceHistory policies={vehicle.insurance_policies || []} vehicleId={String(vehicle.id)} />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[16px]">
-          
-          {/* Card 1: Insurance */}
-          <div className="border rounded-[10px] h-[90px] p-[16px] flex flex-col justify-between" style={{ backgroundColor: insuranceStatus.bg, borderColor: insuranceStatus.border }}>
-            <div className="flex items-center">
-              <Shield className="w-[20px] h-[20px] text-[#333333] mr-[10px]" strokeWidth={1.8} />
-              <span className="text-[12px] font-bold text-[#111111] uppercase tracking-wide">INSURANCE</span>
-            </div>
-            <div>
-              <div className="flex items-center font-semibold text-[13px] mb-[2px]" style={{ color: insuranceStatus.color }}>
-                <insuranceStatus.AlertIcon className="w-[14px] h-[14px] mr-[6px]" strokeWidth={2.5} />
-                {insuranceStatus.status}
-              </div>
-              <div className="text-[13px] text-[#333333] pl-[20px]">
-                {formatDate(latestInsurance?.expiry_date)}
-              </div>
-            </div>
-          </div>
+      )}
 
-          {/* Card 2: Tax */}
-          <div className="border rounded-[10px] h-[90px] p-[16px] flex flex-col justify-between" style={{ backgroundColor: taxStatus.bg, borderColor: taxStatus.border }}>
-            <div className="flex items-center">
-              <Receipt className="w-[20px] h-[20px] text-[#333333] mr-[10px]" strokeWidth={1.8} />
-              <span className="text-[12px] font-bold text-[#111111] uppercase tracking-wide">TAX</span>
-            </div>
-            <div>
-              <div className="flex items-center font-semibold text-[13px] mb-[2px]" style={{ color: taxStatus.color }}>
-                <taxStatus.AlertIcon className="w-[14px] h-[14px] mr-[6px]" strokeWidth={2.5} />
-                {taxStatus.status}
-              </div>
-              <div className="text-[13px] text-[#333333] pl-[20px]">
-                {formatDate(latestTax?.valid_upto)}
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Fitness */}
-          <div className="border rounded-[10px] h-[90px] p-[16px] flex flex-col justify-between" style={{ backgroundColor: fitnessStatus.bg, borderColor: fitnessStatus.border }}>
-            <div className="flex items-center">
-              <CheckCircle2 className="w-[20px] h-[20px] text-[#333333] mr-[10px]" strokeWidth={1.8} />
-              <span className="text-[12px] font-bold text-[#111111] uppercase tracking-wide">FITNESS</span>
-            </div>
-            <div>
-              <div className="flex items-center font-semibold text-[13px] mb-[2px]" style={{ color: fitnessStatus.color }}>
-                <fitnessStatus.AlertIcon className="w-[14px] h-[14px] mr-[6px]" strokeWidth={2.5} />
-                {fitnessStatus.status}
-              </div>
-              <div className="text-[13px] text-[#333333] pl-[20px]">
-                {formatDate(latestFitness?.expiry_date)}
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4: Permit */}
-          <div className="border rounded-[10px] h-[90px] p-[16px] flex flex-col justify-between" style={{ backgroundColor: permitStatus.bg, borderColor: permitStatus.border }}>
-            <div className="flex items-center">
-              <FileBadge className="w-[20px] h-[20px] text-[#333333] mr-[10px]" strokeWidth={1.8} />
-              <span className="text-[12px] font-bold text-[#111111] uppercase tracking-wide">PERMIT</span>
-            </div>
-            <div>
-              <div className="flex items-center font-semibold text-[13px] mb-[2px]" style={{ color: permitStatus.color }}>
-                <permitStatus.AlertIcon className="w-[14px] h-[14px] mr-[6px]" strokeWidth={2.5} />
-                {permitStatus.status}
-              </div>
-              <div className="text-[13px] text-[#333333] pl-[20px]">
-                {formatDate(latestPermit?.expiry_date)}
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* PART 4: VEHICLE INFO & TAX DETAILS */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-[16px] mt-[16px]">
-        
-        {/* Vehicle Information Card */}
-        <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[20px]">
-          <div className="flex items-center mb-[18px]">
-            <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
-            <h3 className="text-[14px] font-semibold text-[#111111]">Vehicle Information</h3>
-          </div>
-          
-          <div className="flex">
-            {/* Left Column */}
-            <div className="flex-1 pr-[16px]">
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">Class</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.vehicle_class?.name)}</span>
-              </div>
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">Model</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.model)}</span>
-              </div>
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">Horse Power</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{vehicle.horse_power ? `${vehicle.horse_power}CC` : "—"}</span>
-              </div>
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">RLW</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.rlw)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[13px] text-[#666666]">Cylinder</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.cylinder)}</span>
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="w-[1px] bg-[#E5E7EB] mx-[4px]"></div>
-
-            {/* Right Column */}
-            <div className="flex-1 pl-[20px]">
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">S_C_Ind</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.s_c_ind)}</span>
-              </div>
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">UW</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.uw)}</span>
-              </div>
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">PLW</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.plw)}</span>
-              </div>
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">Chassis No.</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.chassis_number)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[13px] text-[#666666]">Engine No.</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatText(vehicle.engine_number)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tax Details Card */}
-        <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[20px]">
-          <div className="flex items-center mb-[18px]">
-            <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
-            <h3 className="text-[14px] font-semibold text-[#111111]">Tax Details</h3>
-          </div>
-          
-          <div className="flex">
-            {/* Left Column */}
-            <div className="flex-1 pr-[16px]">
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">Tax Up To Date</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatDate(latestTax?.valid_upto)}</span>
-              </div>
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">Tax Paid Date</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatDate(latestTax?.paid_date)}</span>
-              </div>
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">Tax Penalty</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatCurrency(latestTax?.penalty)}</span>
-              </div>
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">Tax Interest</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatCurrency(latestTax?.interest)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[13px] text-[#666666]">Tax Amount</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatCurrency(latestTax?.amount)}</span>
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="w-[1px] bg-[#E5E7EB] mx-[4px]"></div>
-
-            {/* Right Column */}
-            <div className="flex-1 pl-[20px]">
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">Tax Receipt No.</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatText(latestTax?.receipt_number)}</span>
-              </div>
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">Yearly</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{latestTax?.yearly ? 'Y' : (latestTax?.yearly === false ? 'N' : '—')}</span>
-              </div>
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">Yearly Amount</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatCurrency(latestTax?.yearly_amount)}</span>
-              </div>
-              <div className="flex justify-between items-center mb-[12px]">
-                <span className="text-[13px] text-[#666666]">Half Yearly</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{latestTax?.half_yearly ? 'Y' : (latestTax?.half_yearly === false ? 'N' : '—')}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[13px] text-[#666666]">Half Yearly Amount</span>
-                <span className="text-[13px] font-semibold text-[#111111]">{formatCurrency(latestTax?.half_yearly_amount)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* PART 5: ADDITIONAL COMPLIANCE DETAILS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-[12px] mt-[16px]">
-        
-        {/* Card 1: Fitness Details */}
-        <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[16px] min-h-[150px]">
-          <div className="flex items-center mb-[18px]">
-            <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
-            <h3 className="text-[14px] font-semibold text-[#111111]">Fitness Details</h3>
-          </div>
-          <div className="space-y-[10px]">
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">Fitness Up To Date</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatDate(latestFitness?.expiry_date)}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">Passed By</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestFitness?.passed_by)}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">Place</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestFitness?.place)}</span>
-            </div>
-            <div className="flex justify-between items-center pt-[2px]">
-              <span className="text-[12px] text-[#666666]">Status</span>
-              <span className="px-[6px] py-[2px] rounded-[4px] border text-[11px] font-semibold" style={{ backgroundColor: fitnessStatus.bg, borderColor: fitnessStatus.border, color: fitnessStatus.color }}>
-                {fitnessStatus.status}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 2: Permit Details */}
-        <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[16px] min-h-[150px]">
-          <div className="flex items-center mb-[18px]">
-            <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
-            <h3 className="text-[14px] font-semibold text-[#111111]">Permit Details</h3>
-          </div>
-          <div className="space-y-[10px]">
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">Permit Up To Date</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatDate(latestPermit?.expiry_date)}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">Permit No.</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestPermit?.permit_number)}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">Permit Amount</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatCurrency(latestPermit?.amount)}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">Receipt No.</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestPermit?.receipt_no)}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">Permit Date</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatDate(latestPermit?.issue_date)}</span>
-            </div>
-            <div className="flex justify-between items-center pt-[2px]">
-              <span className="text-[12px] text-[#666666]">Status</span>
-              <span className="px-[6px] py-[2px] rounded-[4px] border text-[11px] font-semibold" style={{ backgroundColor: permitStatus.bg, borderColor: permitStatus.border, color: permitStatus.color }}>
-                {permitStatus.status}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 3: National Permit Details */}
-        <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[16px] min-h-[150px]">
-          <div className="flex items-center mb-[18px]">
-            <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
-            <h3 className="text-[14px] font-semibold text-[#111111]">National Permit Details</h3>
-          </div>
-          <div className="space-y-[10px]">
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">National Permit Up To Date</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatDate(latestNationalPermit?.expiry_date)}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">National Permit State</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestNationalPermit?.state_info)}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">Postal Address</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestNationalPermit?.address)}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">City</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestNationalPermit?.city)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 4: Insurance Details */}
-        <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[16px] min-h-[150px]">
-          <div className="flex items-center mb-[18px]">
-            <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
-            <h3 className="text-[14px] font-semibold text-[#111111]">Insurance Details</h3>
-          </div>
-          <div className="space-y-[10px]">
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">Insurance Company</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestInsurance?.insurance_company?.name)}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">Policy No.</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatText(latestInsurance?.policy_number)}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-[12px] text-[#666666]">Expiry Date</span>
-              <span className="text-[12px] font-semibold text-[#111111] text-right">{formatDate(latestInsurance?.expiry_date)}</span>
-            </div>
-            <div className="flex justify-between items-center pt-[2px]">
-              <span className="text-[12px] text-[#666666]">Status</span>
-              <span className="px-[6px] py-[2px] rounded-[4px] border text-[11px] font-semibold" style={{ backgroundColor: insuranceStatus.bg, borderColor: insuranceStatus.border, color: insuranceStatus.color }}>
-                {insuranceStatus.status}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 5: Additional Information */}
-        <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[16px] min-h-[150px]">
-          <div className="flex items-center mb-[18px]">
-            <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
-            <h3 className="text-[14px] font-semibold text-[#111111]">Additional Information</h3>
-          </div>
-          <div className="space-y-[12px]">
-            <div>
-              <div className="text-[12px] text-[#666666] mb-[2px]">HPA With</div>
-              <div className="text-[12px] font-semibold text-[#111111] leading-[1.3] break-words">{formatText(vehicle.hpa_with)}</div>
-            </div>
-            <div>
-              <div className="text-[12px] text-[#666666] mb-[2px]">Remarks</div>
-              <div className="text-[12px] font-semibold text-[#111111]">{formatText(vehicle.remarks)}</div>
-            </div>
-            <div>
-              <div className="text-[12px] text-[#666666] mb-[2px]">Group</div>
-              <div className="text-[12px] font-semibold text-[#111111]">{formatText(vehicle.group)}</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
+      {/* TAB CONTENT: 4. NOTES */}
+      {activeTab === "notes" && (
+        <VehicleNotes vehicle={vehicle} />
+      )}
     </div>
   );
 }

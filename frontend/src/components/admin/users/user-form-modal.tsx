@@ -57,13 +57,27 @@ export function UserFormModal({ userId, onClose, onSuccess }: UserFormModalProps
     }
   }, [userData, isEditing]);
 
+  useEffect(() => {
+    if (!isEditing && rolesData?.roles?.length && !formData.role_id) {
+      setFormData(prev => ({ ...prev, role_id: rolesData.roles[0].id }));
+    }
+  }, [rolesData, isEditing, formData.role_id]);
+
   const mutation = useMutation({
     mutationFn: (data: any) => isEditing ? adminApi.updateUser(userId, data) : adminApi.createUser(data),
     onSuccess: () => {
       onSuccess();
     },
     onError: (err: any) => {
-      setError(err.response?.data?.message || err.message || "An error occurred");
+      const serverErrors = err.response?.data?.errors;
+      if (serverErrors && typeof serverErrors === "object") {
+        const errorMessages = Object.entries(serverErrors)
+          .map(([_, msgs]) => Array.isArray(msgs) ? msgs.join(" ") : String(msgs))
+          .join(" | ");
+        setError(errorMessages || err.response?.data?.message || "Validation failed.");
+      } else {
+        setError(err.response?.data?.message || err.message || "An error occurred");
+      }
     }
   });
 
@@ -71,9 +85,20 @@ export function UserFormModal({ userId, onClose, onSuccess }: UserFormModalProps
     e.preventDefault();
     setError(null);
 
-    const submitData = { ...formData, permissions: selectedPermissions };
-    if (isEditing && !submitData.password) {
-      delete submitData.password;
+    const submitData: any = {
+      name: formData.name.trim(),
+      email: formData.email.trim().toLowerCase(),
+      role_id: Number(formData.role_id),
+      status: formData.status,
+      phone: formData.phone.trim() || null,
+      department: formData.department.trim() || null,
+      permissions: formData.role_id === 1 ? [] : selectedPermissions,
+    };
+
+    if (!isEditing) {
+      submitData.password = formData.password;
+    } else if (formData.password) {
+      submitData.password = formData.password;
     }
 
     mutation.mutate(submitData);

@@ -14,10 +14,9 @@ class UpdateInsurancePolicyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Vehicle ID should generally not change for an existing insurance policy, 
-            // but if it can, we validate it.
             'vehicle_id' => ['sometimes', 'required', 'exists:vehicles,id'],
-            'insurance_company_id' => ['nullable', 'exists:insurance_companies,id'],
+            'insurance_company_id' => ['nullable'],
+            'insurance_company_name' => ['nullable', 'string', 'max:255'],
             'policy_number' => ['sometimes', 'required', 'string', 'max:255'],
             'receipt_number' => ['nullable', 'string', 'max:255'],
             
@@ -34,7 +33,7 @@ class UpdateInsurancePolicyRequest extends FormRequest
             'sum_insured' => ['nullable', 'numeric', 'min:0'],
             'trolley_amount' => ['nullable', 'numeric', 'min:0'],
             'other_amount' => ['nullable', 'numeric', 'min:0'],
-            'ncb' => ['nullable', 'numeric', 'min:0'],
+            'ncb' => ['nullable'],
             'od_tp_premium' => ['nullable', 'numeric', 'min:0'],
             'service_tax' => ['nullable', 'numeric', 'min:0'],
             

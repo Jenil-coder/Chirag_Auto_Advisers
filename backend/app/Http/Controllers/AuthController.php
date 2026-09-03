@@ -69,7 +69,7 @@ class AuthController extends Controller
             return $this->error("Invalid credentials", [], 401);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $user->createToken('auth_token', ['*'], now()->addHours(24))->plainTextToken;
 
         $user->update(['last_login_at' => now(), 'last_active_at' => now()]);
 
@@ -86,8 +86,8 @@ class AuthController extends Controller
             'status' => 'Success'
         ]);
 
-        // Eager load role for the frontend
-        $user->load('role');
+        // Eager load role and permissions for the frontend
+        $user->load(['role.permissions', 'permissions']);
 
         return $this->success('Login successful', [
             'user' => $user,

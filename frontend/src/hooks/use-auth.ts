@@ -11,16 +11,32 @@ export function useAuth() {
     retry: false,
   });
 
+  const isAdmin = Boolean(
+    user && (
+      user.role_id === 1 ||
+      user.role?.name === 'Administrator' ||
+      user.role?.name?.toLowerCase().includes('admin')
+    )
+  );
+
   const hasPermission = (permissionName: string) => {
-    if (!user || !user.role) return false;
+    if (!user) return false;
     
     // Administrator role gets all permissions automatically
-    if (user.role.name === 'Administrator' || user.role_id === 1) return true;
+    if (isAdmin) return true;
     
-    if (!user.role.permissions) return false;
+    // Direct user permissions check
+    if (user.permissions && user.permissions.some(p => p.name === permissionName)) {
+      return true;
+    }
+
+    // Role permissions check
+    if (user.role?.permissions && user.role.permissions.some(p => p.name === permissionName)) {
+      return true;
+    }
     
-    return user.role.permissions.some(p => p.name === permissionName);
+    return false;
   };
 
-  return { user, isLoading, error, hasPermission };
+  return { user, isLoading, error, hasPermission, isAdmin };
 }

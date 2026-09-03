@@ -45,7 +45,12 @@ export function FitnessDashboard({ vehicles, isLoading, refetch }: FitnessDashbo
     let result = [...vehicles];
 
     // Status Filter
-    if (statusFilter !== "ALL") {
+    if (statusFilter === "ALL") {
+      // By default show only vehicles with an up to date fitness record
+      result = result.filter(v => v.fitness?.expiry_date && v.fitness_status !== 'NOT_AVAILABLE');
+    } else if (statusFilter === "NOT_AVAILABLE") {
+      result = result.filter(v => !v.fitness?.expiry_date || v.fitness_status === 'NOT_AVAILABLE');
+    } else {
       result = result.filter(v => v.fitness_status === statusFilter);
     }
 
@@ -148,7 +153,7 @@ export function FitnessDashboard({ vehicles, isLoading, refetch }: FitnessDashbo
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="ALL">All Statuses</option>
+            <option value="ALL">All Statuses (With Fitness Date)</option>
             <option value="ACTIVE">Active</option>
             <option value="EXPIRING_SOON">Expiring Soon</option>
             <option value="EXPIRED">Expired</option>

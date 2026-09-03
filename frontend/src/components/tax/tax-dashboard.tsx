@@ -26,7 +26,13 @@ export function TaxDashboard({ vehicles, isLoading, refetch }: TaxDashboardProps
     let result = [...vehicles];
 
     // Status Filter
-    if (statusFilter !== "ALL") {
+    if (statusFilter === "ALL") {
+      // By default show only vehicles that have tax up to date recorded
+      result = result.filter(v => v.tax?.tax_up_to_date && v.tax_status !== 'DUE');
+    } else if (statusFilter === "NOT_AVAILABLE" || statusFilter === "DUE") {
+      // Show vehicles with no tax up to date recorded
+      result = result.filter(v => !v.tax?.tax_up_to_date || v.tax_status === 'DUE');
+    } else {
       result = result.filter(v => v.tax_status === statusFilter);
     }
 
@@ -130,11 +136,11 @@ export function TaxDashboard({ vehicles, isLoading, refetch }: TaxDashboardProps
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="ALL">All Statuses</option>
+            <option value="ALL">All Statuses (With Tax Date)</option>
             <option value="ACTIVE">Active</option>
             <option value="EXPIRING_SOON">Expiring Soon</option>
             <option value="EXPIRED">Expired</option>
-            <option value="DUE">Due</option>
+            <option value="NOT_AVAILABLE">Not Available / Tax Due</option>
           </select>
 
           <select 

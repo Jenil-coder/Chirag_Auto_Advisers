@@ -7,6 +7,7 @@ import { InsurancePolicy, PaginatedResponse, ApiResponse, Vehicle } from "@/type
 import { Search, Download, ChevronLeft, ChevronRight, Eye, Edit2, Filter, ChevronUp, ChevronDown, ShieldAlert, AlertCircle, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
 
 interface InsurancePolicyWithVehicle extends InsurancePolicy {
   vehicle?: Vehicle;
@@ -17,6 +18,7 @@ interface InsurancePolicyWithVehicle extends InsurancePolicy {
 
 export function InsuranceGrid() {
   const router = useRouter();
+  const { hasPermission } = useAuth();
   
   // State
   const [page, setPage] = useState(1);
@@ -233,12 +235,12 @@ export function InsuranceGrid() {
               policies.map((p) => (
                 <tr key={p.id} className="h-[58px] group transition-colors hover:bg-[#FAFAFA]">
                   <td className="px-6 whitespace-nowrap">
-                    <Link href={`/insurance/${p.id}`} className="font-medium text-[#111111] hover:underline underline-offset-2">
+                    <Link href={`/insurance/view?id=${p.id}`} className="font-medium text-[#111111] hover:underline underline-offset-2">
                       {p.policy_number}
                     </Link>
                   </td>
                   <td className="px-6 whitespace-nowrap">
-                    <Link href={`/vehicles/${p.vehicle?.id}`} className="font-medium text-[#111111] hover:underline underline-offset-2">
+                    <Link href={`/vehicles/view?id=${p.vehicle?.id}`} className="font-medium text-[#111111] hover:underline underline-offset-2">
                       {p.vehicle?.vehicle_number || "N/A"}
                     </Link>
                   </td>
@@ -256,26 +258,30 @@ export function InsuranceGrid() {
                   <td className="px-6 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-2">
                       <Link 
-                        href={`/insurance/${p.id}`}
+                        href={`/insurance/view?id=${p.id}`}
                         className="flex h-[36px] w-[36px] items-center justify-center rounded-full text-[#777777] transition-colors hover:bg-[#E5E5E5] hover:text-[#111111]"
                         title="View Policy"
                       >
                         <Eye className="h-4 w-4" />
                       </Link>
-                      <Link 
-                        href={`/insurance/${p.id}/edit`}
-                        className="flex h-[36px] w-[36px] items-center justify-center rounded-full text-[#777777] transition-colors hover:bg-[#E5E5E5] hover:text-[#111111]"
-                        title="Edit Policy"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Link>
-                      <Link 
-                        href={`/insurance/${p.id}/renew`}
-                        className="flex h-[36px] w-[36px] items-center justify-center rounded-full text-[#777777] transition-colors hover:bg-[#E5E5E5] hover:text-[#111111]"
-                        title="Renew Policy"
-                      >
-                        <RefreshCcw className="h-4 w-4" />
-                      </Link>
+                      {hasPermission('insurance.edit') && (
+                        <>
+                          <Link 
+                            href={`/insurance/edit?id=${p.id}`}
+                            className="flex h-[36px] w-[36px] items-center justify-center rounded-full text-[#777777] transition-colors hover:bg-[#E5E5E5] hover:text-[#111111]"
+                            title="Edit Policy"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Link>
+                          <Link 
+                            href={`/insurance/renew?id=${p.id}`}
+                            className="flex h-[36px] w-[36px] items-center justify-center rounded-full text-[#777777] transition-colors hover:bg-[#E5E5E5] hover:text-[#111111]"
+                            title="Renew Policy"
+                          >
+                            <RefreshCcw className="h-4 w-4" />
+                          </Link>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -302,14 +308,14 @@ export function InsuranceGrid() {
                       >
                         Clear Filters
                       </button>
-                    ) : (
+                    ) : hasPermission('insurance.create') ? (
                       <Link 
                         href="/insurance/create"
                         className="rounded-[10px] bg-[#111111] px-6 py-2.5 text-[18px] font-medium text-white hover:bg-[#333333]"
                       >
                         + Add Policy
                       </Link>
-                    )}
+                    ) : null}
                   </div>
                 </td>
               </tr>

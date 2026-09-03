@@ -41,13 +41,7 @@ class InsurancePolicy extends Model
         'confirmation_date' => 'date',
         'transfer_date' => 'date',
         'is_active' => 'boolean',
-        'sum_insured' => 'decimal:2',
-        'trolley_amount' => 'decimal:2',
-        'other_amount' => 'decimal:2',
-        'ncb' => 'decimal:2',
-        'od_tp_premium' => 'decimal:2',
-        'service_tax' => 'decimal:2',
-        'total_premium' => 'decimal:2',
+        'ncb' => 'string',
     ];
 
     public function vehicle(): BelongsTo

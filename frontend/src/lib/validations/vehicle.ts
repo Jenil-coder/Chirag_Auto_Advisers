@@ -1,97 +1,73 @@
 import * as z from "zod";
 
-const emptyStringToNull = (val: string | undefined | null) => {
-  if (val === "" || val === undefined || val === null) return undefined;
-  return val;
-};
-
-const numericString = z
-  .union([z.string(), z.number(), z.nan(), z.null(), z.undefined()])
-  .transform((val) => {
-    if (val === "" || val === null || val === undefined || Number.isNaN(val)) return undefined;
-    const num = Number(val);
-    return isNaN(num) ? undefined : num;
-  })
-  .refine((val) => val === undefined || val >= 0, "Value cannot be negative");
-
 export const vehicleSchema = z.object({
   // Basic Information
-  vehicle_number: z.string()
-    .min(1, "Vehicle number is required")
-    .max(20, "Vehicle number is too long")
-    .transform(val => val.toUpperCase()),
-  troli_no: z.string().nullish().transform(emptyStringToNull),
-  owner_name: z.string().min(1, "Owner name is required"),
-  registration_date: z.string().nullish().transform(emptyStringToNull),
-  tractor_registration_date: z.string().nullish().transform(emptyStringToNull),
+  vehicle_number: z.any().optional(),
+  troli_no: z.any().optional(),
+  owner_name: z.any().optional(),
+  registration_date: z.any().optional(),
+  tractor_registration_date: z.any().optional(),
   
   // Address
-  permanent_address: z.string().nullish().transform(emptyStringToNull),
-  phone: z.string().nullish().transform(emptyStringToNull),
-  status: z.enum(["Active", "Inactive", "Archived"]).default("Active"),
+  permanent_address: z.any().optional(),
+  phone: z.any().optional(),
+  status: z.any().optional(),
   
   // General Details
-  class_id: z.string().nullish().transform(emptyStringToNull),
-  model: z.string().nullish().transform(emptyStringToNull),
-  horse_power: numericString,
-  rlw: numericString,
-  cylinder: numericString,
-  s_c_ind: numericString,
-  uw: numericString,
-  make_id: numericString,
-  chassis_number: z.string().nullish().transform(emptyStringToNull),
-  engine_number: z.string().nullish().transform(emptyStringToNull),
-  plw: numericString,
+  class_id: z.any().optional(),
+  model: z.any().optional(),
+  horse_power: z.any().optional(),
+  rlw: z.any().optional(),
+  cylinder: z.any().optional(),
+  s_c_ind: z.any().optional(),
+  uw: z.any().optional(),
+  make_id: z.any().optional(),
+  chassis_number: z.any().optional(),
+  engine_number: z.any().optional(),
+  plw: z.any().optional(),
   
-  // Tax Details
-  tax: z.object({
-    tax_up_to_date: z.string().nullish().transform(emptyStringToNull),
-    tax_paid_date: z.string().nullish().transform(emptyStringToNull),
-    penalty: numericString,
-    interest: numericString,
-    amount: numericString,
-    receipt_no: z.string().nullish().transform(emptyStringToNull),
-    yearly: z.boolean().default(false).optional(),
-    yearly_amount: numericString,
-    half_yearly: z.boolean().default(false).optional(),
-    half_yearly_amount: numericString,
-  }).optional(),
-
-  // Fitness Details
-  fitness: z.object({
-    fitness_up_to_date: z.string().nullish().transform(emptyStringToNull),
-    passed_by: z.string().nullish().transform(emptyStringToNull),
-    place: z.string().nullish().transform(emptyStringToNull),
-  }).optional(),
-
-  // Permit Details
-  permit: z.object({
-    permit_up_to_date: z.string().nullish().transform(emptyStringToNull),
-    permit_no: z.string().nullish().transform(emptyStringToNull),
-    amount: numericString,
-    receipt_no: z.string().nullish().transform(emptyStringToNull),
-    permit_date: z.string().nullish().transform(emptyStringToNull),
-  }).optional(),
-
-  // National Permit Details
-  national_permit: z.object({
-    national_permit_up_to_date: z.string().nullish().transform(emptyStringToNull),
-    national_permit_state: z.string().nullish().transform(emptyStringToNull),
-    postal_address: z.string().nullish().transform(emptyStringToNull),
-    city: z.string().nullish().transform(emptyStringToNull),
-  }).optional(),
-
-  // Insurance Details
-  insurance: z.object({
-    insurance_company_id: z.string().nullish().transform(emptyStringToNull),
-    policy_no: z.string().nullish().transform(emptyStringToNull),
-    insurance_expiry_date: z.string().nullish().transform(emptyStringToNull),
-  }).optional(),
+  // Compliance Details
+  tax: z.any().optional(),
+  fitness: z.any().optional(),
+  permit: z.any().optional(),
+  national_permit: z.any().optional(),
+  insurance: z.any().optional(),
 
   // Additional Information
-  hpa_with: z.string().nullish().transform(emptyStringToNull),
-  remarks: z.string().nullish().transform(emptyStringToNull),
-  group: z.string().nullish().transform(emptyStringToNull),
-});
+  hpa_with: z.any().optional(),
+  remarks: z.any().optional(),
+  group: z.any().optional(),
+}).passthrough();
 
-export type VehicleFormValues = z.infer<typeof vehicleSchema>;
+export type VehicleFormValues = {
+  vehicle_number?: string;
+  troli_no?: string;
+  owner_name?: string;
+  registration_date?: string;
+  tractor_registration_date?: string;
+  permanent_address?: string;
+  phone?: string;
+  status?: string;
+  class_id?: any;
+  model?: string;
+  horse_power?: any;
+  rlw?: any;
+  cylinder?: any;
+  s_c_ind?: any;
+  uw?: any;
+  make_id?: any;
+  chassis_number?: string;
+  engine_number?: string;
+  plw?: any;
+  tax?: any;
+  fitness?: any;
+  permit?: any;
+  national_permit?: any;
+  insurance?: any;
+  hpa_with?: string;
+  remarks?: string;
+  group?: string;
+  [key: string]: any;
+};
+
+export type VehicleFormOutput = VehicleFormValues;

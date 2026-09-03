@@ -9,6 +9,8 @@ import { ChevronRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
 
+import { PermissionGuard } from "@/components/auth/permission-guard";
+
 export default function EditVehiclePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -73,26 +75,28 @@ export default function EditVehiclePage({ params }: { params: Promise<{ id: stri
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-slate-50 flex flex-col">
-      <div className="flex-none p-2 md:px-4 md:py-2 border-b bg-white flex justify-between items-center h-[50px]">
-        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-          <Link href="/vehicles" className="hover:text-primary">Vehicles</Link>
-          <ChevronRight className="h-3 w-3" />
-          <Link href={`/vehicles/${id}`} className="hover:text-primary">{vehicle.vehicle_number}</Link>
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-foreground font-medium text-sm text-blue-900 uppercase">Edit: {vehicle.vehicle_number}</span>
+    <PermissionGuard permission="motor_management.edit" showPageDenied>
+      <div className="h-screen w-screen overflow-hidden bg-slate-50 flex flex-col">
+        <div className="flex-none p-2 md:px-4 md:py-2 border-b bg-white flex justify-between items-center h-[50px]">
+          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+            <Link href="/vehicles" className="hover:text-primary">Vehicles</Link>
+            <ChevronRight className="h-3 w-3" />
+            <Link href={`/vehicles/${id}`} className="hover:text-primary">{vehicle.vehicle_number}</Link>
+            <ChevronRight className="h-3 w-3" />
+            <span className="text-foreground font-medium text-sm text-blue-900 uppercase">Edit: {vehicle.vehicle_number}</span>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          <MotorVehicleForm 
+            mode="edit" 
+            initialData={vehicle} 
+            vehicleId={id} 
+            onSave={handleSave} 
+            onDelete={handleDelete}
+          />
         </div>
       </div>
-
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <MotorVehicleForm 
-          mode="edit" 
-          initialData={vehicle} 
-          vehicleId={id} 
-          onSave={handleSave} 
-          onDelete={handleDelete}
-        />
-      </div>
-    </div>
+    </PermissionGuard>
   );
 }

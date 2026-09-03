@@ -87,7 +87,7 @@ export function InsuranceHistory({ policies, vehicleId }: InsuranceHistoryProps)
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Link href={`/insurance/${policy.id}`} className="text-primary hover:underline inline-flex items-center font-medium">
+                        <Link href={`/insurance/view?id=${policy.id}`} className="text-primary hover:underline inline-flex items-center font-medium">
                           View
                           <ArrowRight className="ml-1 h-4 w-4" />
                         </Link>

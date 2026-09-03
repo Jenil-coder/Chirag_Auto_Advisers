@@ -7,9 +7,11 @@ import { Vehicle, PaginatedResponse, ApiResponse } from "@/types/vehicle";
 import { Search, Download, ChevronLeft, ChevronRight, Eye, Edit2, Filter, ChevronUp, ChevronDown, Car, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
 
 export function VehiclesGrid() {
   const router = useRouter();
+  const { hasPermission } = useAuth();
   
   // State
   const [page, setPage] = useState(1);
@@ -227,7 +229,7 @@ export function VehiclesGrid() {
               vehicles.map((v) => (
                 <tr key={v.id} className="h-[58px] group transition-colors hover:bg-[#FAFAFA]">
                   <td className="px-6 whitespace-nowrap">
-                    <Link href={`/vehicles/${v.id}`} className="font-medium text-[#111111] hover:underline underline-offset-2">
+                    <Link href={`/vehicles/view?id=${v.id}`} className="font-medium text-[#111111] hover:underline underline-offset-2">
                       {v.vehicle_number}
                     </Link>
                   </td>
@@ -250,19 +252,21 @@ export function VehiclesGrid() {
                   <td className="px-6 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-2">
                       <Link 
-                        href={`/vehicles/${v.id}`}
+                        href={`/vehicles/view?id=${v.id}`}
                         className="flex h-[36px] w-[36px] items-center justify-center rounded-full text-[#777777] transition-colors hover:bg-[#E5E5E5] hover:text-[#111111]"
                         title="View Vehicle"
                       >
                         <Eye className="h-4 w-4" />
                       </Link>
-                      <Link 
-                        href={`/vehicles/${v.id}/edit`}
-                        className="flex h-[36px] w-[36px] items-center justify-center rounded-full text-[#777777] transition-colors hover:bg-[#E5E5E5] hover:text-[#111111]"
-                        title="Edit Vehicle"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Link>
+                      {hasPermission('motor_management.edit') && (
+                        <Link 
+                          href={`/vehicles/edit?id=${v.id}`}
+                          className="flex h-[36px] w-[36px] items-center justify-center rounded-full text-[#777777] transition-colors hover:bg-[#E5E5E5] hover:text-[#111111]"
+                          title="Edit Vehicle"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Link>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -289,14 +293,14 @@ export function VehiclesGrid() {
                       >
                         Clear Filters
                       </button>
-                    ) : (
+                    ) : hasPermission('motor_management.create') ? (
                       <Link 
                         href="/vehicles/new"
                         className="rounded-[10px] bg-[#111111] px-6 py-2.5 text-[18px] font-medium text-white hover:bg-[#333333]"
                       >
                         + Add Vehicle
                       </Link>
-                    )}
+                    ) : null}
                   </div>
                 </td>
               </tr>

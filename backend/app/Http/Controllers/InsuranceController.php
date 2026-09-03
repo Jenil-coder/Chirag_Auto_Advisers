@@ -66,7 +66,8 @@ class InsuranceController extends Controller
             $query->orderBy('id', 'desc');
         }
 
-        $policies = $query->paginate($request->input('limit', 15))->withQueryString();
+        $perPage = min(1000, max(1, (int)$request->input('limit', $request->input('per_page', 15))));
+        $policies = $query->paginate($perPage)->withQueryString();
 
         return $this->success('Insurance records retrieved successfully', $policies);
     }
@@ -85,15 +86,15 @@ class InsuranceController extends Controller
         // Structure the response as requested
         $response = [
             'id' => $policy->id,
-            'vehicle' => [
+            'vehicle' => $policy->vehicle ? [
                 'id' => $policy->vehicle->id,
                 'vehicleNumber' => $policy->vehicle->vehicle_number,
                 'ownerName' => $policy->vehicle->owner_name,
                 'phone' => $policy->vehicle->phone,
-                'city' => $policy->vehicle->permanent_address, // Assuming city is within address or just map it
+                'city' => $policy->vehicle->permanent_address,
                 'make' => $policy->vehicle->make ? $policy->vehicle->make->name : null,
                 'model' => $policy->vehicle->model,
-            ],
+            ] : null,
             'policy' => [
                 'insuranceCompany' => $policy->insuranceCompany ? $policy->insuranceCompany->name : null,
                 'insuranceCompanyId' => $policy->insurance_company_id,
@@ -114,7 +115,7 @@ class InsuranceController extends Controller
                 'sumInsured' => (float) $policy->sum_insured,
                 'trolleyAmount' => (float) $policy->trolley_amount,
                 'otherAmount' => (float) $policy->other_amount,
-                'ncb' => (float) $policy->ncb,
+                'ncb' => is_numeric($policy->ncb) ? (float) $policy->ncb : $policy->ncb,
                 'odTpPremium' => (float) $policy->od_tp_premium,
                 'serviceTax' => (float) $policy->service_tax,
                 'totalPremium' => (float) $policy->total_premium,
@@ -136,6 +137,14 @@ class InsuranceController extends Controller
         $data = $request->validated();
         $userId = $request->user() ? $request->user()->id : null;
         
+        if (empty($data['insurance_company_id']) && !empty($request->input('insurance_company_name'))) {
+            $comp = \App\Models\InsuranceCompany::firstOrCreate([
+                'name' => trim($request->input('insurance_company_name'))
+            ]);
+            $data['insurance_company_id'] = $comp->id;
+        }
+        unset($data['insurance_company_name']);
+
         $data['created_by'] = $userId;
         $data['is_active'] = $data['is_active'] ?? true;
         
@@ -185,6 +194,14 @@ class InsuranceController extends Controller
         $data = $request->validated();
         $userId = $request->user() ? $request->user()->id : null;
         $data['updated_by'] = $userId;
+
+        if (empty($data['insurance_company_id']) && !empty($request->input('insurance_company_name'))) {
+            $comp = \App\Models\InsuranceCompany::firstOrCreate([
+                'name' => trim($request->input('insurance_company_name'))
+            ]);
+            $data['insurance_company_id'] = $comp->id;
+        }
+        unset($data['insurance_company_name']);
         
         $oldValues = $policy->toArray();
 

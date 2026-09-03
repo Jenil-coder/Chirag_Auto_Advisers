@@ -4,10 +4,9 @@ import { VehicleFormValues } from "@/lib/validations/vehicle";
 interface InsuranceDetailsProps {
   register: UseFormRegister<VehicleFormValues>;
   errors: FieldErrors<VehicleFormValues>;
-  insuranceCos?: any[];
 }
 
-export function InsuranceDetails({ register, errors, insuranceCos }: InsuranceDetailsProps) {
+export function InsuranceDetails({ register, errors }: InsuranceDetailsProps) {
   const inputClass = "w-full h-11 rounded-md border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors";
   const labelClass = "block text-[15px] font-medium text-slate-700 mb-1.5";
 

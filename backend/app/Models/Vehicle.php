@@ -11,7 +11,7 @@ class Vehicle extends Model
 {
     use SoftDeletes;
 
-    protected $appends = ['tax_status', 'tax', 'fitness_status', 'fitness'];
+    protected $appends = ['tax_status', 'tax', 'fitness_status', 'fitness', 'permit_status', 'permit', 'national_permit_status', 'national_permit'];
 
     protected $fillable = [
         'vehicle_number', 'troli_no', 'owner_name', 'registration_date', 'tractor_registration_date',
@@ -25,12 +25,9 @@ class Vehicle extends Model
     protected $casts = [
         'registration_date' => 'date',
         'tractor_registration_date' => 'date',
-        'horse_power' => 'decimal:2',
-        'rlw' => 'decimal:2',
-        'uw' => 'decimal:2',
-        'plw' => 'decimal:2',
-        'cylinder' => 'integer',
-        's_c_ind' => 'integer',
+        'horse_power' => 'string',
+        'cylinder' => 'string',
+        's_c_ind' => 'string',
     ];
 
     public function make(): BelongsTo
@@ -135,6 +132,79 @@ class Vehicle extends Model
     public function getFitnessStatusAttribute()
     {
         $latest = $this->fitnessRecords()->latest('id')->first();
+        
+        if (!$latest || empty($latest->expiry_date)) {
+            return 'NOT_AVAILABLE';
+        }
+
+        $validUpto = \Carbon\Carbon::parse($latest->expiry_date)->startOfDay();
+        $now = \Carbon\Carbon::now()->startOfDay();
+
+        if ($now->greaterThan($validUpto)) {
+            return 'EXPIRED';
+        } elseif ($now->copy()->addDays(30)->greaterThanOrEqualTo($validUpto)) {
+            return 'EXPIRING_SOON';
+        } else {
+            return 'ACTIVE';
+        }
+    }
+
+    public function getPermitAttribute()
+    {
+        $latest = $this->permits()->latest('id')->first();
+        if (!$latest) {
+            return null;
+        }
+
+        return [
+            'id' => $latest->id,
+            'expiry_date' => $latest->expiry_date,
+            'permit_number' => $latest->permit_number,
+            'amount' => $latest->amount,
+            'receipt_no' => $latest->receipt_no,
+            'issue_date' => $latest->issue_date,
+        ];
+    }
+
+    public function getPermitStatusAttribute()
+    {
+        $latest = $this->permits()->latest('id')->first();
+        
+        if (!$latest || empty($latest->expiry_date)) {
+            return 'NOT_AVAILABLE';
+        }
+
+        $validUpto = \Carbon\Carbon::parse($latest->expiry_date)->startOfDay();
+        $now = \Carbon\Carbon::now()->startOfDay();
+
+        if ($now->greaterThan($validUpto)) {
+            return 'EXPIRED';
+        } elseif ($now->copy()->addDays(30)->greaterThanOrEqualTo($validUpto)) {
+            return 'EXPIRING_SOON';
+        } else {
+            return 'ACTIVE';
+        }
+    }
+
+    public function getNationalPermitAttribute()
+    {
+        $latest = $this->nationalPermits()->latest('id')->first();
+        if (!$latest) {
+            return null;
+        }
+
+        return [
+            'id' => $latest->id,
+            'expiry_date' => $latest->expiry_date,
+            'state_info' => $latest->state_info,
+            'address' => $latest->address,
+            'city' => $latest->city,
+        ];
+    }
+
+    public function getNationalPermitStatusAttribute()
+    {
+        $latest = $this->nationalPermits()->latest('id')->first();
         
         if (!$latest || empty($latest->expiry_date)) {
             return 'NOT_AVAILABLE';

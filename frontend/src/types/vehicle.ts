@@ -43,6 +43,23 @@ export interface Vehicle {
     passed_by?: string;
     place?: string;
   };
+  permit_status?: 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED' | 'NOT_AVAILABLE';
+  permit?: {
+    id?: number;
+    expiry_date?: string;
+    permit_number?: string;
+    amount?: number;
+    receipt_no?: string;
+    issue_date?: string;
+  };
+  national_permit_status?: 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED' | 'NOT_AVAILABLE';
+  national_permit?: {
+    id?: number;
+    expiry_date?: string;
+    state_info?: string;
+    address?: string;
+    city?: string;
+  };
   
   hpa_with?: string;
   remarks?: string;

@@ -25,28 +25,43 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 
-const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Motor Management", href: "/vehicles", icon: Car },
-  { name: "Insurance", href: "/insurance", icon: ShieldCheck },
-  { name: "Tax", href: "/tax", icon: Receipt },
-  { name: "Fitness", href: "/fitness", icon: CheckCircle },
-  { name: "Permit", href: "/permit", icon: FileText },
-  { name: "National Permit", href: "/national-permit", icon: Map },
-  { name: "Reports", href: "/reports", icon: BarChart3 },
+interface NavItem {
+  name: string;
+  href: string;
+  icon: any;
+  permission?: string;
+  adminOnly?: boolean;
+  children?: Array<{
+    name: string;
+    href: string;
+    icon: any;
+    permission?: string;
+  }>;
+}
+
+const navigation: NavItem[] = [
+  { name: "Dashboard", href: "/", icon: LayoutDashboard, permission: "dashboard.view" },
+  { name: "Motor Management", href: "/vehicles", icon: Car, permission: "motor_management.view" },
+  { name: "Insurance", href: "/insurance", icon: ShieldCheck, permission: "insurance.view" },
+  { name: "Tax", href: "/tax", icon: Receipt, permission: "tax.view" },
+  { name: "Fitness", href: "/fitness", icon: CheckCircle, permission: "fitness.view" },
+  { name: "Permit", href: "/permit", icon: FileText, permission: "permit.view" },
+  { name: "National Permit", href: "/national-permit", icon: Map, permission: "national_permit.view" },
+  { name: "Reports", href: "/reports", icon: BarChart3, permission: "reports.view" },
   { 
     name: "Administration", 
     href: "/admin", 
     icon: Users,
-    permission: 'administration.view', // Added permission requirement
+    permission: 'administration.view',
+    adminOnly: true,
     children: [
-      { name: "Overview", href: "/admin", icon: LayoutDashboard },
-      { name: "Users", href: "/admin/users", icon: Users },
-      { name: "Roles & Permissions", href: "/admin/roles", icon: Key },
-      { name: "Audit Activity", href: "/admin/audit", icon: Activity },
+      { name: "Overview", href: "/admin", icon: LayoutDashboard, permission: 'administration.view' },
+      { name: "Users", href: "/admin/users", icon: Users, permission: 'administration.manage_users' },
+      { name: "Roles & Permissions", href: "/admin/roles", icon: Key, permission: 'administration.manage_roles' },
+      { name: "Audit Activity", href: "/admin/audit", icon: Activity, permission: 'administration.view_audit' },
     ]
   },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Settings", href: "/settings", icon: Settings, permission: 'settings.view', adminOnly: true },
   { name: "Help", href: "/help", icon: HelpCircle },
 ];
 
@@ -54,7 +69,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [adminExpanded, setAdminExpanded] = useState(false);
-  const { hasPermission } = useAuth();
+  const { user, hasPermission, isAdmin } = useAuth();
 
   return (
     <div className={cn(
@@ -84,6 +99,11 @@ export function Sidebar() {
       
       <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden">
         {navigation.map((item) => {
+          // If item is admin-only, verify admin role
+          if (item.adminOnly && !isAdmin) {
+            return null;
+          }
+
           // If item has a permission requirement, check it
           if (item.permission && !hasPermission(item.permission)) {
             return null;
@@ -93,7 +113,10 @@ export function Sidebar() {
           const hasChildren = item.children && item.children.length > 0;
           
           if (hasChildren) {
-            const isChildActive = item.children?.some(child => pathname === child.href || pathname.startsWith(child.href + '/'));
+            const visibleChildren = item.children?.filter(child => !child.permission || hasPermission(child.permission)) || [];
+            if (visibleChildren.length === 0) return null;
+
+            const isChildActive = visibleChildren.some(child => pathname === child.href || pathname.startsWith(child.href + '/'));
             
             return (
               <div key={item.name} className="space-y-1">
@@ -126,7 +149,7 @@ export function Sidebar() {
                 
                 {adminExpanded && !isCollapsed && (
                   <div className="pl-10 pr-3 py-1 space-y-1">
-                    {item.children?.map(child => {
+                    {visibleChildren.map(child => {
                       const childActive = pathname === child.href;
                       return (
                         <Link
@@ -186,14 +209,14 @@ export function Sidebar() {
       <div className={cn("mt-auto border-t pt-4", isCollapsed ? "flex justify-center" : "")}>
         <div className={cn("flex items-center", isCollapsed ? "" : "px-3 py-2")}>
           <div className="flex-shrink-0">
-            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-              U
+            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm uppercase">
+              {user?.name ? user.name.charAt(0) : "U"}
             </div>
           </div>
           {!isCollapsed && (
             <div className="ml-3 truncate">
-              <p className="text-sm font-medium truncate">System User</p>
-              <p className="text-xs text-muted-foreground truncate">user@example.com</p>
+              <p className="text-sm font-medium truncate text-foreground">{user?.name || "System User"}</p>
+              <p className="text-xs text-muted-foreground truncate">{user?.email || "user@example.com"}</p>
             </div>
           )}
         </div>

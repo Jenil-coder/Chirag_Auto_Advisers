@@ -42,7 +42,8 @@ class VehicleController extends Controller
         $sortOrder = $request->input('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
 
-        $vehicles = $query->paginate($request->input('per_page', 15))->withQueryString();
+        $perPage = min(1000, max(1, (int)$request->input('limit', $request->input('per_page', 15))));
+        $vehicles = $query->paginate($perPage)->withQueryString();
 
         return $this->success('Vehicles retrieved successfully', $vehicles);
     }
@@ -72,7 +73,7 @@ class VehicleController extends Controller
 
     public function update(UpdateVehicleRequest $request, $id)
     {
-        $vehicle = Vehicle::find($id);
+        $vehicle = ($id instanceof Vehicle) ? $id : Vehicle::find($id);
 
         if (!$vehicle) {
             return $this->error('Vehicle not found', [], 404);
@@ -91,7 +92,7 @@ class VehicleController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $vehicle = Vehicle::find($id);
+        $vehicle = ($id instanceof Vehicle) ? $id : Vehicle::find($id);
 
         if (!$vehicle) {
             return $this->error('Vehicle not found', [], 404);

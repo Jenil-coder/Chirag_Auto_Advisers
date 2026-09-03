@@ -8,6 +8,8 @@ import { VehicleFormValues } from "@/lib/validations/vehicle";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
+import { PermissionGuard } from "@/components/auth/permission-guard";
+
 export default function AddVehiclePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -20,7 +22,7 @@ export default function AddVehiclePage() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
       alert("Vehicle created successfully.");
-      router.push(`/vehicles/${data.data.id}`);
+      router.push(`/vehicles/view?id=${data.data.id}`);
     },
     onError: (error: any) => {
       alert(error.response?.data?.message || "Failed to create vehicle.");
@@ -32,10 +34,12 @@ export default function AddVehiclePage() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-slate-50 flex flex-col">
-      <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
-        <MotorVehicleForm mode="create" onSave={handleSave} />
+    <PermissionGuard permission="motor_management.create" showPageDenied>
+      <div className="h-screen w-screen overflow-hidden bg-slate-50 flex flex-col">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
+          <MotorVehicleForm mode="create" onSave={handleSave} />
+        </div>
       </div>
-    </div>
+    </PermissionGuard>
   );
 }

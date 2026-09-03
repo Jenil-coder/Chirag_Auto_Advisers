@@ -29,7 +29,7 @@ export function InsuranceForm({ renewPolicyId }: InsuranceFormProps = {}) {
   const { data: renewingPolicy, isLoading: isLoadingRenewal } = useQuery({
     queryKey: ["insurance-policy", renewPolicyId],
     queryFn: async () => {
-      const response = await apiClient.get(`/insurance-policies/${renewPolicyId}`);
+      const response = await apiClient.get(`/insurance/${renewPolicyId}`);
       return response.data.data;
     },
     enabled: !!renewPolicyId,
@@ -53,8 +53,8 @@ export function InsuranceForm({ renewPolicyId }: InsuranceFormProps = {}) {
         setSelectedVehicle(renewingPolicy.vehicle);
         setValue("vehicle_id", renewingPolicy.vehicle.id);
       }
-      if (renewingPolicy.insurance_company_id) {
-        setValue("insurance_company_id", renewingPolicy.insurance_company_id);
+      if (renewingPolicy.insurance_company_id || renewingPolicy.policy?.insuranceCompanyId) {
+        setValue("insurance_company_id", renewingPolicy.insurance_company_id || renewingPolicy.policy?.insuranceCompanyId);
       }
     }
   }, [renewingPolicy, setValue]);
@@ -89,12 +89,13 @@ export function InsuranceForm({ renewPolicyId }: InsuranceFormProps = {}) {
 
   const mutation = useMutation({
     mutationFn: async (data: InsurancePolicyFormValues) => {
-      const response = await apiClient.post("/insurance-policies", data);
+      const response = await apiClient.post("/insurance", data);
       return response.data;
     },
     onSuccess: () => {
       setSuccessMsg("Insurance policy created successfully!");
-      queryClient.invalidateQueries({ queryKey: ["insurance-policies"] });
+      queryClient.invalidateQueries({ queryKey: ["insurance-list"] });
+      queryClient.invalidateQueries({ queryKey: ["insurance"] });
       setTimeout(() => {
         router.push("/insurance");
       }, 1500);

@@ -16,10 +16,10 @@ export const adminApi = {
   getUser: (id: number) => 
     apiClient.get<ApiResponse<User>>(`/admin/users/${id}`).then(res => res.data.data),
 
-  createUser: (data: Partial<User> & { password?: string }) => 
+  createUser: (data: Partial<User> & { password?: string; permissions?: number[] }) => 
     apiClient.post<ApiResponse<User>>('/admin/users', data).then(res => res.data.data),
 
-  updateUser: (id: number, data: Partial<User>) => 
+  updateUser: (id: number, data: Partial<User> & { permissions?: number[] }) => 
     apiClient.put<ApiResponse<User>>(`/admin/users/${id}`, data).then(res => res.data.data),
 
   resetPassword: (id: number, password: string) => 
@@ -40,4 +40,15 @@ export const adminApi = {
 
   getAuditLog: (id: number) => 
     apiClient.get<ApiResponse<AuditLog>>(`/admin/audit/${id}`).then(res => res.data.data),
+
+  deleteAuditLog: (id: number) =>
+    apiClient.delete<ApiResponse<void>>(`/admin/audit/${id}`).then(res => res.data),
+
+  bulkDeleteAuditLogs: (ids: number[]) =>
+    apiClient.post<ApiResponse<void>>('/admin/audit/bulk-delete', { ids }).then(res => res.data),
+
+  clearAuditLogs: (days?: number) => {
+    const qs = days !== undefined ? `?days=${days}` : '';
+    return apiClient.delete<ApiResponse<void>>(`/admin/audit/clear${qs}`).then(res => res.data);
+  },
 };

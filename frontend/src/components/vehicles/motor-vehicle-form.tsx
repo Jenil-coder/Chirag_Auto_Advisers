@@ -34,9 +34,8 @@ export function MotorVehicleForm({ mode, initialData, vehicleId, onSave, onDelet
 
   const { data: makes } = useQuery({ queryKey: ["vehicle-makes"], queryFn: async () => (await apiClient.get("/vehicle-makes")).data.data });
   const { data: classes } = useQuery({ queryKey: ["vehicle-classes"], queryFn: async () => (await apiClient.get("/vehicle-classes")).data.data });
-  const { data: insuranceCos } = useQuery({ queryKey: ["insurance-companies"], queryFn: async () => (await apiClient.get("/insurance-companies")).data.data });
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<VehicleFormValues>({
+  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema) as any,
     defaultValues: {
       status: "Active",
@@ -189,12 +188,19 @@ export function MotorVehicleForm({ mode, initialData, vehicleId, onSave, onDelet
             onDeleteClick={handleDelete}
           />
           
-          <GeneralDetails register={register} errors={errors} classes={classes} makes={makes} />
+          <GeneralDetails 
+            register={register} 
+            errors={errors} 
+            setValue={setValue} 
+            watch={watch} 
+            classes={classes} 
+            makes={makes} 
+          />
           <TaxDetails register={register} errors={errors} />
           
           <PermitDetails register={register} errors={errors} />
           
-          <InsuranceDetails register={register} errors={errors} insuranceCos={insuranceCos} />
+          <InsuranceDetails register={register} errors={errors} />
           <AdditionalInformation register={register} errors={errors} />
         </div>
       </div>

@@ -31,7 +31,7 @@ export function BasicVehicleInformation({
           
           <div>
             <label className={labelClass}>
-              MMV. No. <span className="text-red-500">*</span>
+              MMV. No.
             </label>
             <input
               type="text"
@@ -39,8 +39,8 @@ export function BasicVehicleInformation({
               className={`${inputClass} ${errors.vehicle_number ? 'border-red-500 focus:ring-red-500' : ''}`}
               {...register("vehicle_number")}
             />
-            {errors.vehicle_number && (
-              <p className={errorClass}>{errors.vehicle_number.message}</p>
+            {errors.vehicle_number?.message && (
+              <p className={errorClass}>{String(errors.vehicle_number.message)}</p>
             )}
           </div>
 
@@ -78,7 +78,7 @@ export function BasicVehicleInformation({
 
           <div className="md:col-span-2">
             <label className={labelClass}>
-              Vehicle/Owner Name <span className="text-red-500">*</span>
+              Vehicle/Owner Name
             </label>
             <input
               type="text"
@@ -86,8 +86,8 @@ export function BasicVehicleInformation({
               className={`${inputClass} ${errors.owner_name ? 'border-red-500 focus:ring-red-500' : ''}`}
               {...register("owner_name")}
             />
-            {errors.owner_name && (
-              <p className={errorClass}>{errors.owner_name.message}</p>
+            {errors.owner_name?.message && (
+              <p className={errorClass}>{String(errors.owner_name.message)}</p>
             )}
           </div>
 

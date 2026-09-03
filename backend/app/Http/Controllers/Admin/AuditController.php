@@ -62,4 +62,38 @@ class AuditController extends Controller
         $log = AuditLog::with('user:id,name,email')->findOrFail($id);
         return $this->success('Audit log retrieved successfully', $log);
     }
+
+    public function destroy($id)
+    {
+        $log = AuditLog::findOrFail($id);
+        $log->delete();
+
+        return $this->success('Audit log deleted successfully');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:audit_logs,id',
+        ]);
+
+        $count = AuditLog::whereIn('id', $request->ids)->delete();
+
+        return $this->success("Successfully deleted {$count} audit log(s)");
+    }
+
+    public function clearAll(Request $request)
+    {
+        if ($request->has('days') && is_numeric($request->days)) {
+            $days = intval($request->days);
+            $count = AuditLog::where('created_at', '<', now()->subDays($days))->delete();
+            return $this->success("Deleted {$count} audit logs older than {$days} days");
+        }
+
+        $count = AuditLog::count();
+        AuditLog::query()->delete();
+
+        return $this->success("All {$count} audit log(s) have been permanently cleared");
+    }
 }

@@ -181,7 +181,7 @@ export function FitnessDetailPanel({ vehicle, onClose }: FitnessDetailPanelProps
                 </div>
               </div>
               <div className="mt-5 pt-4 border-t border-slate-100">
-                <Link href={`/vehicles/${vehicle.id}`} className="inline-flex items-center text-[13px] font-medium text-blue-600 hover:text-blue-800 transition-colors">
+                <Link href={`/vehicles/view?id=${vehicle.id}`} className="inline-flex items-center text-[13px] font-medium text-blue-600 hover:text-blue-800 transition-colors">
                   <ExternalLink className="w-4 h-4 mr-1.5" />
                   View Vehicle Profile
                 </Link>
@@ -219,7 +219,7 @@ export function FitnessDetailPanel({ vehicle, onClose }: FitnessDetailPanelProps
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></span>
                   Fitness information is managed from Motor Vehicle Entry.
                 </div>
-                <Link href={`/vehicles/${vehicle.id}`} className="inline-flex h-[32px] items-center justify-center rounded-[6px] bg-white border border-blue-200 px-3 text-[13px] font-medium text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-colors shadow-sm">
+                <Link href={`/vehicles/view?id=${vehicle.id}`} className="inline-flex h-[32px] items-center justify-center rounded-[6px] bg-white border border-blue-200 px-3 text-[13px] font-medium text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-colors shadow-sm">
                   View Motor Entry
                 </Link>
               </div>

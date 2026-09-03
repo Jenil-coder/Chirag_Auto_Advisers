@@ -17,6 +17,9 @@ class VehicleService
         return DB::transaction(function () use ($data, $userId) {
             // Extract master data (everything that is not an array for children)
             $masterData = collect($data)->except(['tax', 'fitness', 'permit', 'national_permit', 'insurance'])->toArray();
+            if (empty($masterData['vehicle_number'])) {
+                $masterData['vehicle_number'] = 'UNREG-' . strtoupper(substr(uniqid(), 0, 8));
+            }
             $masterData['created_by'] = $userId;
             $masterData['updated_by'] = $userId;
 
@@ -58,9 +61,9 @@ class VehicleService
      */
     private function processComplianceRecords(Vehicle $vehicle, array $data, ?int $userId, string $actionType)
     {
-        if (!empty($data['tax'])) {
+        if (!empty($data['tax']) && (!empty($data['tax']['tax_up_to_date']) || !empty($data['tax']['tax_paid_date']) || !empty($data['tax']['amount']))) {
             $taxData = $data['tax'];
-            $taxData['valid_upto'] = $taxData['tax_up_to_date'];
+            $taxData['valid_upto'] = $taxData['tax_up_to_date'] ?? ($taxData['tax_paid_date'] ?? now()->toDateString());
             $taxData['paid_date'] = $taxData['tax_paid_date'] ?? null;
             $taxData['created_by'] = $userId;
             $taxData['updated_by'] = $userId;
@@ -70,9 +73,9 @@ class VehicleService
             $this->logAudit($userId, $vehicle->id, "Tax record $actionType", null, $record->toArray());
         }
 
-        if (!empty($data['fitness'])) {
+        if (!empty($data['fitness']) && (!empty($data['fitness']['fitness_up_to_date']) || !empty($data['fitness']['passed_by']))) {
             $fitnessData = $data['fitness'];
-            $fitnessData['expiry_date'] = $fitnessData['fitness_up_to_date'];
+            $fitnessData['expiry_date'] = $fitnessData['fitness_up_to_date'] ?? now()->toDateString();
             $fitnessData['created_by'] = $userId;
             $fitnessData['updated_by'] = $userId;
             unset($fitnessData['fitness_up_to_date']);
@@ -81,10 +84,10 @@ class VehicleService
             $this->logAudit($userId, $vehicle->id, "Fitness record $actionType", null, $record->toArray());
         }
 
-        if (!empty($data['permit'])) {
+        if (!empty($data['permit']) && (!empty($data['permit']['permit_up_to_date']) || !empty($data['permit']['permit_no']))) {
             $permitData = $data['permit'];
-            $permitData['expiry_date'] = $permitData['permit_up_to_date'];
-            $permitData['permit_number'] = $permitData['permit_no'] ?? null;
+            $permitData['expiry_date'] = $permitData['permit_up_to_date'] ?? now()->toDateString();
+            $permitData['permit_number'] = $permitData['permit_no'] ?? 'N/A';
             $permitData['issue_date'] = $permitData['permit_date'] ?? null;
             $permitData['created_by'] = $userId;
             $permitData['updated_by'] = $userId;
@@ -94,9 +97,9 @@ class VehicleService
             $this->logAudit($userId, $vehicle->id, "Permit record $actionType", null, $record->toArray());
         }
 
-        if (!empty($data['national_permit'])) {
+        if (!empty($data['national_permit']) && (!empty($data['national_permit']['national_permit_up_to_date']) || !empty($data['national_permit']['national_permit_state']))) {
             $npData = $data['national_permit'];
-            $npData['expiry_date'] = $npData['national_permit_up_to_date'];
+            $npData['expiry_date'] = $npData['national_permit_up_to_date'] ?? now()->toDateString();
             $npData['state_info'] = $npData['national_permit_state'] ?? null;
             $npData['address'] = $npData['postal_address'] ?? null;
             $npData['created_by'] = $userId;
@@ -107,13 +110,11 @@ class VehicleService
             $this->logAudit($userId, $vehicle->id, "National Permit record $actionType", null, $record->toArray());
         }
 
-        if (!empty($data['insurance'])) {
+        if (!empty($data['insurance']) && (!empty($data['insurance']['policy_no']) || !empty($data['insurance']['insurance_expiry_date']))) {
             $insData = $data['insurance'];
-            $insData['policy_number'] = $insData['policy_no'];
-            $insData['expiry_date'] = $insData['insurance_expiry_date'];
-            // Since start_date is required by the original table but missing in legacy specs, we can fallback to the current date or make it nullable.
-            // Let's set it to current date as fallback, but Ideally the migration will handle it or it's not strictly non-null.
-            $insData['start_date'] = $insData['insurance_expiry_date']; // Just a placeholder if missing
+            $insData['policy_number'] = $insData['policy_no'] ?? 'POL-' . strtoupper(substr(uniqid(), 0, 6));
+            $insData['expiry_date'] = $insData['insurance_expiry_date'] ?? now()->addYear()->toDateString();
+            $insData['start_date'] = $insData['start_date'] ?? now()->toDateString();
             $insData['created_by'] = $userId;
             $insData['updated_by'] = $userId;
             unset($insData['policy_no'], $insData['insurance_expiry_date']);

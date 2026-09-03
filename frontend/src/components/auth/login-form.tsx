@@ -30,6 +30,7 @@ export function LoginForm() {
       // Store token in localStorage
       if (data.data && data.data.token) {
         localStorage.setItem("auth_token", data.data.token);
+        localStorage.setItem("auth_login_time", Date.now().toString());
       }
       router.push("/");
     },

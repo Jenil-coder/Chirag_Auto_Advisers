@@ -48,7 +48,7 @@ export function VehicleDetailsCard({ vehicle }: VehicleDetailsProps) {
           </div>
         </div>
         <Link 
-          href={`/vehicles/${vehicle.id}`}
+          href={`/vehicles/view?id=${vehicle.id}`}
           target="_blank"
           className="inline-flex items-center text-[15px] font-medium text-[#111111] hover:underline"
         >

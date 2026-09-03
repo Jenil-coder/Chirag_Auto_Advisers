@@ -69,6 +69,11 @@ class User extends Authenticatable
 
     public function hasPermission(string $permissionName): bool
     {
+        // Administrator has full permissions
+        if ($this->role_id === 1 || ($this->role && $this->role->name === 'Administrator')) {
+            return true;
+        }
+
         // Check direct user permissions first
         if ($this->permissions()->where('name', $permissionName)->exists()) {
             return true;

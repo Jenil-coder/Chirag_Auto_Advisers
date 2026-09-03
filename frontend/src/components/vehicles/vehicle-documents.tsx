@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
-import { Loader2, Upload, FileText, Trash2, Download } from "lucide-react";
+import { Loader2, Upload, FileText, Trash2, Download, Plus, CheckCircle2, AlertCircle } from "lucide-react";
 
 interface Document {
   id: number;
@@ -15,7 +15,7 @@ interface Document {
 }
 
 interface VehicleDocumentsProps {
-  vehicleId: string;
+  vehicleId: string | number;
   documents: Document[];
 }
 
@@ -24,6 +24,7 @@ export function VehicleDocuments({ vehicleId, documents = [] }: VehicleDocuments
   const [file, setFile] = useState<File | null>(null);
   const [docType, setDocType] = useState("RC");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isDeletingId, setIsDeletingId] = useState<number | null>(null);
 
   const uploadMutation = useMutation({
@@ -38,11 +39,15 @@ export function VehicleDocuments({ vehicleId, documents = [] }: VehicleDocuments
     onSuccess: () => {
       setFile(null);
       setErrorMsg(null);
-      queryClient.invalidateQueries({ queryKey: ["vehicle", vehicleId] });
-      (document.getElementById('file-upload') as HTMLInputElement).value = '';
+      setSuccessMsg("Document uploaded successfully!");
+      setTimeout(() => setSuccessMsg(null), 4000);
+      queryClient.invalidateQueries({ queryKey: ["vehicle", String(vehicleId)] });
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
     },
     onError: (error: any) => {
       setErrorMsg(error.response?.data?.message || "Failed to upload document.");
+      setSuccessMsg(null);
     },
   });
 
@@ -51,7 +56,7 @@ export function VehicleDocuments({ vehicleId, documents = [] }: VehicleDocuments
       await apiClient.delete(`/vehicles/${vehicleId}/documents/${documentId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vehicle", vehicleId] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle", String(vehicleId)] });
       setIsDeletingId(null);
     },
     onError: (error: any) => {
@@ -79,93 +84,133 @@ export function VehicleDocuments({ vehicleId, documents = [] }: VehicleDocuments
   };
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-        <h3 className="font-semibold text-lg mb-4">Upload New Document</h3>
-        <form onSubmit={handleUpload} className="flex flex-col sm:flex-row items-end gap-4">
-          <div className="space-y-2 w-full sm:w-1/3">
-            <label className="text-sm font-medium">Document Type</label>
+    <div className="space-y-6 mt-[20px]">
+      {/* Upload New Document Card */}
+      <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[24px]">
+        <div className="flex items-center mb-[18px]">
+          <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
+          <h3 className="text-[15px] font-semibold text-[#111111]">Upload New Document</h3>
+        </div>
+
+        {errorMsg && (
+          <div className="mb-4 flex items-center p-3 text-sm text-red-700 bg-red-50 rounded-lg border border-red-200">
+            <AlertCircle className="w-4 h-4 mr-2 shrink-0" />
+            {errorMsg}
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="mb-4 flex items-center p-3 text-sm text-emerald-700 bg-emerald-50 rounded-lg border border-emerald-200">
+            <CheckCircle2 className="w-4 h-4 mr-2 shrink-0" />
+            {successMsg}
+          </div>
+        )}
+
+        <form onSubmit={handleUpload} className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+          <div className="sm:col-span-4 space-y-1.5">
+            <label className="text-[13px] font-semibold text-[#333333] uppercase tracking-wide">Document Type</label>
             <select
               value={docType}
               onChange={(e) => setDocType(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex h-11 w-full rounded-md border border-[#CBD5E1] bg-white px-3 py-2 text-sm text-[#111111] focus:outline-none focus:ring-2 focus:ring-[#123B6D]"
             >
               <option value="RC">RC Copy</option>
               <option value="Insurance">Insurance Policy</option>
               <option value="Fitness">Fitness Certificate</option>
               <option value="Permit">Permit</option>
+              <option value="National Permit">National Permit</option>
               <option value="Tax">Tax Receipt</option>
-              <option value="Other">Other</option>
+              <option value="PUC">PUC Certificate</option>
+              <option value="Other">Other Document</option>
             </select>
           </div>
-          <div className="space-y-2 w-full sm:w-1/2">
-            <label className="text-sm font-medium">File (Max 5MB)</label>
+
+          <div className="sm:col-span-6 space-y-1.5">
+            <label className="text-[13px] font-semibold text-[#333333] uppercase tracking-wide">Choose File (PDF, PNG, JPG - Max 5MB)</label>
             <input
               id="file-upload"
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex h-11 w-full rounded-md border border-[#CBD5E1] bg-white px-3 py-2 text-sm text-[#111111] file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-[#123B6D]/10 file:text-[#123B6D] hover:file:bg-[#123B6D]/20 cursor-pointer"
               required
             />
           </div>
-          <Button type="submit" disabled={!file || uploadMutation.isPending} className="w-full sm:w-auto h-10">
-            {uploadMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-            Upload
-          </Button>
+
+          <div className="sm:col-span-2">
+            <Button 
+              type="submit" 
+              disabled={!file || uploadMutation.isPending} 
+              className="w-full h-11 bg-[#123B6D] hover:bg-[#0c2849] text-white font-medium text-[13px] rounded-md transition-colors shadow-sm"
+            >
+              {uploadMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+              Upload
+            </Button>
+          </div>
         </form>
-        {errorMsg && (
-          <p className="mt-2 text-sm text-destructive">{errorMsg}</p>
-        )}
       </div>
 
-      <div className="rounded-xl border bg-card text-card-foreground shadow">
-        <div className="p-6">
-          <h3 className="font-semibold text-lg mb-4">Uploaded Documents ({documents.length})</h3>
-          {documents.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <FileText className="h-10 w-10 mx-auto mb-2 opacity-20" />
-              <p>No documents uploaded yet.</p>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {documents.map((doc) => (
-                <div key={doc.id} className="flex items-center justify-between py-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-muted p-2 rounded">
-                      <FileText className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">{doc.file_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {doc.document_type} &bull; Uploaded {new Date(doc.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
+      {/* Uploaded Documents List Card */}
+      <div className="bg-white border border-[#E5E7EB] rounded-[10px] p-[24px]">
+        <div className="flex items-center justify-between mb-[18px]">
+          <div className="flex items-center">
+            <div className="w-[3px] h-[16px] bg-[#123B6D] rounded-[2px] mr-[8px]"></div>
+            <h3 className="text-[15px] font-semibold text-[#111111]">Attached Documents</h3>
+          </div>
+          <span className="text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+            {documents.length} {documents.length === 1 ? 'file' : 'files'}
+          </span>
+        </div>
+
+        {documents.length === 0 ? (
+          <div className="text-center py-12 text-[#777777]">
+            <FileText className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+            <p className="text-[15px] font-medium text-[#333333]">No documents attached to this vehicle yet.</p>
+            <p className="text-[13px] text-[#777777] mt-1">Upload registration documents, insurance policies, or fitness certificates above.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-[#E5E7EB]">
+            {documents.map((doc) => (
+              <div key={doc.id} className="flex items-center justify-between py-4 group hover:bg-slate-50/50 -mx-6 px-6 transition-colors">
+                <div className="flex items-center space-x-3.5 min-w-0">
+                  <div className="bg-[#123B6D]/10 p-2.5 rounded-lg shrink-0">
+                    <FileText className="h-5 w-5 text-[#123B6D]" />
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <a
-                      href={process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') + doc.file_path}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </a>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(doc.id)}
-                      disabled={isDeletingId === doc.id}
-                    >
-                      {isDeletingId === doc.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                    </Button>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[14px] text-[#111111] truncate">{doc.file_name}</p>
+                    <div className="flex items-center gap-2 mt-0.5 text-[12px] text-[#666666]">
+                      <span className="font-medium text-[#123B6D]">{doc.document_type}</span>
+                      <span>&bull;</span>
+                      <span>Uploaded {new Date(doc.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <div className="flex items-center space-x-2 shrink-0">
+                  <a
+                    href={process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') + doc.file_path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button variant="outline" size="sm" className="h-9 px-3 border-[#CBD5E1] text-[#333333] hover:text-[#111111] hover:bg-white shadow-2xs">
+                      <Download className="h-4 w-4 mr-1.5" />
+                      Download
+                    </Button>
+                  </a>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 px-3 border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleDelete(doc.id)}
+                    disabled={isDeletingId === doc.id}
+                  >
+                    {isDeletingId === doc.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1.5" />}
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

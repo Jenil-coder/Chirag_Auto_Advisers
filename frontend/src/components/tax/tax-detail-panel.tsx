@@ -159,7 +159,7 @@ export function TaxDetailPanel({ vehicle, onClose }: TaxDetailPanelProps) {
               <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
                 <h3 className="text-[15px] font-semibold text-slate-900 mb-4 pb-3 border-b border-slate-100 flex justify-between items-center">
                   Vehicle Information
-                  <Link href={`/vehicles/${vehicle.id}`} className="text-[12px] text-blue-600 hover:underline flex items-center gap-1 font-medium">
+                  <Link href={`/vehicles/view?id=${vehicle.id}`} className="text-[12px] text-blue-600 hover:underline flex items-center gap-1 font-medium">
                     View <ExternalLink className="w-3 h-3" />
                   </Link>
                 </h3>
@@ -178,7 +178,7 @@ export function TaxDetailPanel({ vehicle, onClose }: TaxDetailPanelProps) {
               <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
                 <h3 className="text-[15px] font-semibold text-slate-900 mb-4 pb-3 border-b border-slate-100 flex justify-between items-center">
                   Tax Information
-                  <Link href={`/vehicles/${vehicle.id}/edit`} className="text-[12px] text-blue-600 hover:underline font-medium">
+                  <Link href={`/vehicles/edit?id=${vehicle.id}`} className="text-[12px] text-blue-600 hover:underline font-medium">
                     Edit Motor Entry
                   </Link>
                 </h3>
@@ -245,7 +245,7 @@ export function TaxDetailPanel({ vehicle, onClose }: TaxDetailPanelProps) {
              ⓘ Tax information is managed from Motor Vehicle Entry.
            </div>
            <Link 
-             href={`/vehicles/${vehicle.id}/edit`}
+             href={`/vehicles/edit?id=${vehicle.id}`}
              className="px-5 py-2.5 bg-white border border-slate-300 rounded-lg text-[14px] font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm flex items-center gap-2"
            >
              Edit Motor Entry
